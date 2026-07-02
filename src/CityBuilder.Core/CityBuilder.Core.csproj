@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    The simulation core is engine-agnostic.
+    It targets netstandard2.1 so the SAME assembly (or source) can be consumed by:
+      - A pure C# Console Application (headless simulation / unit tests / dedicated server)
+      - Unity (Mono / IL2CPP scripting backend)
+      - Godot 4.x (.NET)
+    It must NOT reference any engine type (MonoBehaviour, Node, etc.).
+  -->
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>CityBuilder</RootNamespace>
+    <AssemblyName>CityBuilder.Core</AssemblyName>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <!-- CS1591: don't require XML docs on every public member during this scaffolding phase. -->
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+    <Deterministic>true</Deterministic>
+  </PropertyGroup>
+
+</Project>

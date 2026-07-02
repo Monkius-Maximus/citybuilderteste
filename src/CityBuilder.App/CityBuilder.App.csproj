@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Thin executable host. Proves the simulation runs with ZERO game-engine dependencies.
+    This is the "Console Application" acceptance target from the architecture brief.
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>CityBuilder.App</RootNamespace>
+    <AssemblyName>CityBuilder.App</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\CityBuilder.Core\CityBuilder.Core.csproj" />
+  </ItemGroup>
+
+</Project>

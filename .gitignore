@@ -1,0 +1,20 @@
+# .NET build artifacts
+bin/
+obj/
+*.user
+*.suo
+.vs/
+.vscode/
+.idea/
+
+# Rider / ReSharper
+_ReSharper*/
+*.DotSettings.user
+
+# Test results
+[Tt]est[Rr]esult*/
+*.trx
+
+# OS files
+.DS_Store
+Thumbs.db
