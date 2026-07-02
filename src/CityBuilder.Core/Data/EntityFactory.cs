@@ -54,7 +54,8 @@ public sealed class EntityFactory : IEntityFactory
         Entity entity = _world.Create();
         _world.Add(entity, new GridPositionComponent(cell));
         _world.Add(entity, new VehicleComponent { DefinitionIndex = index, Load = 0 });
-        _world.Add(entity, new MovementComponent { Origin = cell, Destination = cell, Speed = definition.MaxSpeed });
+        // Starts idle (Active = false); the traffic layer assigns a route + current edge.
+        _world.Add(entity, new MovementComponent { Speed = definition.MaxSpeed, Active = false });
 
         return entity;
     }

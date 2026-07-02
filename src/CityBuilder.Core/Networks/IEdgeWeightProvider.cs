@@ -36,12 +36,37 @@ public sealed class CongestionWeightProvider : IEdgeWeightProvider
         _sensitivity = sensitivity;
     }
 
-    /// <summary>Set the current number of agents on an edge (called by the traffic system).</summary>
+    /// <summary>Set the absolute current number of agents on an edge.</summary>
     public void SetLoad(EdgeId edge, float load)
     {
         EnsureCapacity(edge.Value);
         _load[edge.Value] = load;
     }
+
+    /// <summary>Register one agent entering an edge (increment its load).</summary>
+    public void Enter(EdgeId edge)
+    {
+        if (edge.Value < 0)
+        {
+            return;
+        }
+
+        EnsureCapacity(edge.Value);
+        _load[edge.Value] += 1f;
+    }
+
+    /// <summary>Register one agent leaving an edge (decrement its load, clamped at zero).</summary>
+    public void Leave(EdgeId edge)
+    {
+        if (edge.Value >= 0 && edge.Value < _load.Length)
+        {
+            _load[edge.Value] = Math.Max(0f, _load[edge.Value] - 1f);
+        }
+    }
+
+    /// <summary>Current load on an edge (agents occupying it).</summary>
+    public float LoadOf(EdgeId edge)
+        => edge.Value >= 0 && edge.Value < _load.Length ? _load[edge.Value] : 0f;
 
     public float GetWeight(EdgeId edge, float baseCost, int capacity)
     {

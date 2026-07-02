@@ -61,12 +61,18 @@ citybuilderteste/
     │   ├── Networks/                     # 4) Logística & Rede de Fluxo (grafos)
     │   │   ├── NetworkType.cs / NetworkIds.cs / NetworkElements.cs
     │   │   ├── IFlowNetwork.cs / FlowNetwork.cs (lista de adjacência)
-    │   │   └── IEdgeWeightProvider.cs          # pesos DINÂMICOS (congestionamento)
+    │   │   ├── IEdgeWeightProvider.cs          # pesos DINÂMICOS (congestionamento)
+    │   │   └── RoadGridBuilder.cs              # helper p/ montar grade de ruas
     │   ├── Pathfinding/                  # Heurísticas & Algoritmos
     │   │   ├── IPathGraph.cs / PathNeighbor.cs / IHeuristic.cs / MinHeap.cs
     │   │   ├── AStarPathfinder.cs              # A* c/ pesos dinâmicos
     │   │   ├── DijkstraPathfinder.cs           # Dijkstra (A* com h=0)
     │   │   └── DijkstraMap.cs                  # Flow Field (serviços/multidões)
+    │   ├── Traffic/                      # Tráfego & Movimento (agentes sobre a rede)
+    │   │   ├── RouteTable.cs                   # rotas por veículo, buffers POOLED
+    │   │   ├── VehicleSpawner.cs               # cria veículos + rota via A* (congestion-aware)
+    │   │   ├── TrafficSystem.cs                # move agentes/tick, realimenta congestionamento
+    │   │   └── TrafficSpawnSystem.cs           # spawn contínuo (cadência própria)
     │   ├── Commands/                     # Padrão Command (undo/redo + base multiplayer)
     │   │   ├── ICommand.cs / CommandResult.cs / CommandHistory.cs
     │   │   ├── ICommandProcessor.cs / CommandProcessor.cs
@@ -148,6 +154,28 @@ citybuilderteste/
   milhares de buscas individuais (multidões seguem o campo; cobertura de bombeiros/polícia/
   hospital é lida direto).
 
+## Tráfego & Movimento (milestone atual)
+
+Primeira camada de agentes viva sobre a arquitetura — conecta pathfinding + ECS + rede +
+tick engine + pooling em um laço fechado:
+
+- **`VehicleSpawner`** — cria um veículo (via `EntityFactory`) e calcula sua rota com **A*
+  usando os pesos de congestionamento vigentes**; um veículo que nasce num congestionamento
+  já é roteado por fora dele. O buffer da rota vem do pool.
+- **`RouteTable`** — guarda as rotas por veículo em `List<int>` **pooled** (Object Pooling
+  aplicado às rotas): tráfego sustentado não gera lixo de GC.
+- **`TrafficSystem`** (`ISimulationSystem`, cadência *Fast*) — a cada tick integra o progresso
+  com `TickContext.DeltaSeconds` (determinístico), passa o agente de aresta em aresta,
+  **atualiza a carga de cada aresta** (que realimenta o roteamento) e, na chegada, publica
+  evento e recicla id da entidade + buffer da rota. Eventos de chegada são **adiados** para
+  depois da varredura (não perturbam o `Span` em iteração).
+- **`TrafficSpawnSystem`** (cadência própria, mais grossa) — mantém um fluxo contínuo até um
+  teto, demonstrando o escalonador rodando sistemas em frequências diferentes.
+
+O laço de realimentação (veículos → carga nas arestas → pesos do A* → novas rotas desviam) é
+totalmente determinístico: o app headless roda o mesmo cenário duas vezes com a mesma semente
+e compara `(células desenvolvidas, chegadas, spawns)`.
+
 ## Padrões de Projeto
 
 - **Object Pooling** — `ObjectPool<T>` (+ `IPoolable`) recicla atores de alta rotatividade
@@ -186,9 +214,9 @@ dotnet run --project src/CityBuilder.App
 
 O programa exercita, sem nenhuma engine: pub/sub de eventos, comandos (zonear, construir
 estrada, imposto) com undo/redo, ticks fixos determinísticos, crescimento por autômato
-celular, A* (estático e congestionado), flow field de Dijkstra, object pooling, factory a
-partir de definições e uma verificação de **determinismo** (duas execuções com a mesma
-semente produzem o mesmo resultado).
+celular, A* + flow field de Dijkstra, **tráfego** (veículos roteados que se movem, criam
+congestionamento e desviam), object pooling, factory a partir de definições e uma verificação
+de **determinismo** (duas execuções com a mesma semente produzem o mesmo resultado).
 
 > **Compatibilidade de framework.** `CityBuilder.Core` mira **`netstandard2.1`** para ser
 > consumível por Unity (Mono/IL2CPP) e Godot 4 (.NET); o host de console mira `net8.0`.
@@ -202,10 +230,11 @@ semente produzem o mesmo resultado).
    refletir mudanças na UI. Traduza `ScreenPoint`/`Color32`/`TileVisual` para os tipos da engine.
 4. A camada de simulação permanece **intacta e determinística**.
 
-## Roadmap (próximas etapas)
+## Roadmap
 
-- Sistemas de **tráfego** (agentes seguindo caminhos/flow fields) e **utilidades** (energia/água).
-- **Crescimento populacional** e implementação da **economia** sobre os contratos existentes.
-- **Serialização** de save/replay (o estado já é orientado a dados e determinístico).
-- **Multiplayer lockstep** sobre o fluxo de comandos.
-- Remoção estrutural completa em `FlowNetwork` (reciclagem de nós/arestas interiores).
+- [x] **Tráfego & movimento** — agentes roteados por A*, congestionamento realimentado, pooling de rotas.
+- [ ] **Utilidades** (energia/água) via cobertura por flow field de Dijkstra.
+- [ ] **Crescimento populacional** e implementação da **economia** sobre os contratos existentes.
+- [ ] **Serialização** de save/replay (o estado já é orientado a dados e determinístico).
+- [ ] **Multiplayer lockstep** sobre o fluxo de comandos.
+- [ ] Remoção estrutural completa em `FlowNetwork` (reciclagem de nós/arestas interiores).

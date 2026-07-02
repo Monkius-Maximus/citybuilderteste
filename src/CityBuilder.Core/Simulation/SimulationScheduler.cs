@@ -83,7 +83,8 @@ public sealed class SimulationScheduler
             ISimulationSystem system = _systems[i];
             if (tick % system.TickInterval == 0)
             {
-                var context = new TickContext(tick, system.TickInterval, seconds);
+                double delta = system.TickInterval * _clock.SecondsPerTick;
+                var context = new TickContext(tick, system.TickInterval, seconds, delta);
                 system.OnTick(in context);
             }
         }
