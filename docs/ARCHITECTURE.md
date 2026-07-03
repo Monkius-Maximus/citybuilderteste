@@ -73,6 +73,10 @@ citybuilderteste/
     │   │   ├── VehicleSpawner.cs               # cria veículos + rota via A* (congestion-aware)
     │   │   ├── TrafficSystem.cs                # move agentes/tick, realimenta congestionamento
     │   │   └── TrafficSpawnSystem.cs           # spawn contínuo (cadência própria)
+    │   ├── Utilities/                    # Utilidades (energia/água) — cobertura por flow field
+    │   │   ├── UtilityData.cs                  # UtilitySource / UtilityConsumer / UtilityReport
+    │   │   ├── UtilityGrid.cs                  # Dijkstra multi-fonte + alocação de capacidade
+    │   │   └── UtilitySystem.cs                # resolve por tick lento + publica relatório
     │   ├── Commands/                     # Padrão Command (undo/redo + base multiplayer)
     │   │   ├── ICommand.cs / CommandResult.cs / CommandHistory.cs
     │   │   ├── ICommandProcessor.cs / CommandProcessor.cs
@@ -174,7 +178,27 @@ tick engine + pooling em um laço fechado:
 
 O laço de realimentação (veículos → carga nas arestas → pesos do A* → novas rotas desviam) é
 totalmente determinístico: o app headless roda o mesmo cenário duas vezes com a mesma semente
-e compara `(células desenvolvidas, chegadas, spawns)`.
+e compara `(células desenvolvidas, chegadas, spawns, consumidores atendidos)`.
+
+## Utilidades & Cobertura de Serviço (milestone atual)
+
+Energia/água modeladas como **cobertura por flow field de Dijkstra** — o mesmo algoritmo dos
+mapas de serviço (bombeiros/polícia/hospital):
+
+- **`UtilityGrid`** — um serviço (energia OU água) sobre sua `FlowNetwork`. A cobertura é um
+  **Dijkstra multi-fonte** a partir dos nós de fonte: em **uma passada** todo nó aprende o
+  custo até a fonte mais próxima, então "este consumidor está conectado e no alcance?" é O(1)
+  — sem uma busca por consumidor. A capacidade é então alocada **do mais próximo ao mais
+  distante**, gerando *brownouts* realistas quando a demanda supera a oferta. Determinístico
+  (sem RNG; ordenação estável por distância).
+- **`UtilitySource` / `UtilityConsumer` / `UtilityReport`** — structs de dados: ponto de oferta
+  (nó + capacidade), ponto de demanda (nó + consumo, marcado como atendido pelo solve) e o
+  relatório da rede (oferta, demanda, demanda alcançável, demanda atendida, *brownout*).
+- **`UtilitySystem`** (`ISimulationSystem`, cadência lenta) — resolve cada grid por tick e
+  publica um `UtilityUpdatedEvent`. A UI lê para os painéis de energia/água e avisos de apagão.
+
+Reaproveita `DijkstraMap` sem qualquer código novo de pathfinding — a prova de que a heurística
+de flow field da fundação serve tanto para multidões quanto para serviços/utilidades.
 
 ## Padrões de Projeto
 
@@ -215,8 +239,9 @@ dotnet run --project src/CityBuilder.App
 O programa exercita, sem nenhuma engine: pub/sub de eventos, comandos (zonear, construir
 estrada, imposto) com undo/redo, ticks fixos determinísticos, crescimento por autômato
 celular, A* + flow field de Dijkstra, **tráfego** (veículos roteados que se movem, criam
-congestionamento e desviam), object pooling, factory a partir de definições e uma verificação
-de **determinismo** (duas execuções com a mesma semente produzem o mesmo resultado).
+congestionamento e desviam), **utilidades** (cobertura de energia por flow field + brownout por
+capacidade), object pooling, factory a partir de definições e uma verificação de **determinismo**
+(duas execuções com a mesma semente produzem o mesmo resultado).
 
 > **Compatibilidade de framework.** `CityBuilder.Core` mira **`netstandard2.1`** para ser
 > consumível por Unity (Mono/IL2CPP) e Godot 4 (.NET); o host de console mira `net8.0`.
@@ -233,7 +258,7 @@ de **determinismo** (duas execuções com a mesma semente produzem o mesmo resul
 ## Roadmap
 
 - [x] **Tráfego & movimento** — agentes roteados por A*, congestionamento realimentado, pooling de rotas.
-- [ ] **Utilidades** (energia/água) via cobertura por flow field de Dijkstra.
+- [x] **Utilidades** (energia/água) — cobertura por flow field de Dijkstra + alocação de capacidade (brownout).
 - [ ] **Crescimento populacional** e implementação da **economia** sobre os contratos existentes.
 - [ ] **Serialização** de save/replay (o estado já é orientado a dados e determinístico).
 - [ ] **Multiplayer lockstep** sobre o fluxo de comandos.

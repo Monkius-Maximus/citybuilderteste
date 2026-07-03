@@ -10,6 +10,7 @@ using CityBuilder.Networks;
 using CityBuilder.Pathfinding;
 using CityBuilder.Simulation;
 using CityBuilder.Traffic;
+using CityBuilder.Utilities;
 using CityBuilder.Zoning;
 using CityBuilder.Zoning.Rules;
 
@@ -43,6 +44,9 @@ public sealed class GameSimulation : ISimulationContext
     public CongestionWeightProvider RoadCongestion { get; }
     public AStarPathfinder Pathfinder { get; }
 
+    // Utilities layer: solves power/water coverage + capacity each slow tick.
+    public UtilitySystem Utilities { get; }
+
     // Exposed as the interface type (exact match => clean implicit implementation of
     // ISimulationContext.Events). The concrete bus is held privately; callers only need
     // Subscribe/Publish, which IEventBus provides.
@@ -70,6 +74,7 @@ public sealed class GameSimulation : ISimulationContext
         Routes = new RouteTable();
         RoadCongestion = new CongestionWeightProvider();
         Pathfinder = new AStarPathfinder(Heuristics.Manhattan);
+        Utilities = new UtilitySystem(Events);
 
         RegisterComponents();
         RegisterDefaultHeatMaps();
@@ -157,8 +162,22 @@ public sealed class GameSimulation : ISimulationContext
         FlowNetwork road = GetNetwork(NetworkType.Road);
         Scheduler.Register(new TrafficSystem(Entities, road, RoadCongestion, Routes, Events));
 
-        // Utilities, population and economy systems register here in later milestones, each
-        // choosing its own TickInterval. The scheduler already supports variable cadences.
+        // Utilities solve power/water coverage + capacity on a slow cadence (grids added later).
+        Scheduler.Register(Utilities);
+
+        // Population and economy systems register here in later milestones, each choosing its
+        // own TickInterval. The scheduler already supports variable cadences.
+    }
+
+    /// <summary>
+    /// Create a utility service (power/water) over its network and register it with the utility
+    /// system. Add sources/consumers to the returned grid, then it is solved each slow tick.
+    /// </summary>
+    public UtilityGrid CreateUtility(NetworkType kind)
+    {
+        var grid = new UtilityGrid(kind, GetNetwork(kind));
+        Utilities.AddGrid(grid);
+        return grid;
     }
 
     /// <summary>

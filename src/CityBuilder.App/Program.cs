@@ -10,6 +10,7 @@ using CityBuilder.Networks;
 using CityBuilder.Pathfinding;
 using CityBuilder.Presentation;
 using CityBuilder.Traffic;
+using CityBuilder.Utilities;
 using CityBuilder.Zoning;
 
 // =============================================================================
@@ -84,6 +85,45 @@ for (int i = 0; i < 400; i++)
 }
 Console.WriteLine($"After 400 ticks: spawned={spawned}, arrived={arrived}, active={sim.Routes.ActiveCount}, developed cells={lastDeveloped}");
 
+// --- Utilities: power coverage via Dijkstra flow field + capacity brownout ---
+Console.WriteLine("\n-- Utilities (power grid) --");
+FlowNetwork powerNet = sim.GetNetwork(NetworkType.PowerLine);
+RoadGridBuilder.BuildGrid(powerNet, new GridCoord(4, 4), new GridCoord(9, 9), edgeCost: 1f, capacity: 9999);
+UtilityGrid powerGrid = sim.CreateUtility(NetworkType.PowerLine);
+
+powerNet.TryGetNodeAt(new GridCoord(4, 4), out NodeId plant);
+powerGrid.AddSource(plant, capacity: 40f);
+powerGrid.MaxServiceDistance = 8f;
+foreach (GridCoord c in new[] { new GridCoord(5, 5), new GridCoord(6, 6), new GridCoord(7, 7), new GridCoord(9, 9) })
+{
+    powerNet.TryGetNodeAt(c, out NodeId consumer);
+    powerGrid.AddConsumer(consumer, demand: 15f);
+}
+NodeId offGrid = powerNet.AddNode(new GridCoord(40, 40)); // not wired to the network
+powerGrid.AddConsumer(offGrid, demand: 15f);
+
+sim.Events.Subscribe<UtilityUpdatedEvent>(e =>
+    Console.WriteLine($"  [{e.Kind}] supply={e.Supply:0}, reachDemand={e.ReachableDemand:0}, served={e.ServedDemand:0} ({e.ServedConsumers}/{e.ReachableConsumers}), brownout={e.Brownout}"));
+
+UtilityReport under = powerGrid.Solve();
+powerNet.TryGetNodeAt(new GridCoord(9, 9), out NodeId farNode);
+float farDist = powerGrid.CoverageDistance(farNode);
+bool offGridReachable = !float.IsPositiveInfinity(powerGrid.CoverageDistance(offGrid));
+Console.WriteLine($"  supply 40: served {under.ServedConsumers}/{under.ReachableConsumers} reachable, brownout={under.Brownout} " +
+                  $"[(9,9) dist={farDist:0} > range 8 -> excluded; (40,40) off-grid reachable={offGridReachable}]");
+
+powerGrid.ClearSources();
+powerGrid.AddSource(plant, capacity: 70f);
+powerGrid.MaxServiceDistance = 12f;
+UtilityReport upgraded = powerGrid.Solve();
+Console.WriteLine($"  supply 70 + range 12: served {upgraded.ServedConsumers}/{upgraded.ReachableConsumers} reachable, brownout={upgraded.Brownout}");
+
+// Let the UtilitySystem solve on its own slow tick and emit the observer event (line above is a direct call).
+for (int i = 0; i < 60; i++)
+{
+    sim.Step();
+}
+
 // --- Object pooling ---
 Console.WriteLine("\n-- Object pooling --");
 var pool = new CityBuilder.Common.ObjectPool<Particle>(() => new Particle(), prewarm: 4);
@@ -111,7 +151,7 @@ sim.Redo();
 Console.WriteLine($"After Redo:   {taxes.GetRate(ZoneType.Residential):0.00}");
 
 // --- Determinism: identical seed + identical inputs => identical result (incl. traffic) ---
-Console.WriteLine("\n-- Determinism check (zoning + pathfinding + traffic) --");
+Console.WriteLine("\n-- Determinism check (zoning + pathfinding + traffic + utilities) --");
 var runA = RunScenario(seed: 42, ticks: 300);
 var runB = RunScenario(seed: 42, ticks: 300);
 bool same = runA == runB;
@@ -136,16 +176,17 @@ static void SeedDesirability(GameSimulation sim, GridCoord min, GridCoord max, f
     }
 }
 
-// Returns (developedCells, arrivedVehicles, spawnedVehicles) after a scripted run.
-static (int Developed, int Arrived, int Spawned) RunScenario(ulong seed, int ticks)
+// Returns (developedCells, arrivedVehicles, spawnedVehicles, powerServed) after a scripted run.
+static (int Developed, int Arrived, int Spawned, int PowerServed) RunScenario(ulong seed, int ticks)
 {
     var s = new GameSimulation(new GameConfig(48, 48, seed));
     s.Definitions.LoadFrom(new InMemoryDefinitionSource()
         .Add(new VehicleDefinition { Id = "CompactHatch_Tier1", DisplayName = "Compact Hatchback", Class = VehicleClass.Passenger, MaxSpeed = 3f, Capacity = 4 }));
 
-    int arrived = 0, spawned = 0;
+    int arrived = 0, spawned = 0, powerServed = 0;
     s.Events.Subscribe<VehicleArrivedEvent>(_ => arrived++);
     s.Events.Subscribe<VehicleSpawnedEvent>(_ => spawned++);
+    s.Events.Subscribe<UtilityUpdatedEvent>(e => powerServed = e.ServedConsumers);
 
     RoadGridBuilder.BuildGrid(s.GetNetwork(NetworkType.Road), new GridCoord(4, 4), new GridCoord(12, 12), 1f, 6);
     SeedDesirability(s, new GridCoord(20, 20), new GridCoord(34, 34), 1.5f);
@@ -153,6 +194,18 @@ static (int Developed, int Arrived, int Spawned) RunScenario(ulong seed, int tic
 
     VehicleSpawner spawner = s.CreateVehicleSpawner("CompactHatch_Tier1");
     s.Scheduler.Register(new TrafficSpawnSystem(spawner, s.Routes, s.Random, tickInterval: 3, maxActive: 24, spawnPerTick: 2));
+
+    // A power service: source + several consumers, solved each slow tick by the UtilitySystem.
+    FlowNetwork powerNet = s.GetNetwork(NetworkType.PowerLine);
+    RoadGridBuilder.BuildGrid(powerNet, new GridCoord(4, 4), new GridCoord(8, 8), 1f, 9999);
+    UtilityGrid power = s.CreateUtility(NetworkType.PowerLine);
+    powerNet.TryGetNodeAt(new GridCoord(4, 4), out NodeId src);
+    power.AddSource(src, 40f);
+    foreach (GridCoord c in new[] { new GridCoord(5, 5), new GridCoord(6, 6), new GridCoord(7, 7) })
+    {
+        powerNet.TryGetNodeAt(c, out NodeId consumer);
+        power.AddConsumer(consumer, 15f);
+    }
 
     for (int i = 0; i < ticks; i++)
     {
@@ -168,5 +221,5 @@ static (int Developed, int Arrived, int Spawned) RunScenario(ulong seed, int tic
         }
     }
 
-    return (developed, arrived, spawned);
+    return (developed, arrived, spawned, powerServed);
 }
