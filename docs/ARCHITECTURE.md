@@ -88,9 +88,11 @@ citybuilderteste/
     │   │   ├── IDefinition.cs / Definitions.cs (Building/Vehicle/Infrastructure)
     │   │   ├── IDefinitionSource.cs / DefinitionRegistry.cs
     │   │   └── IEntityFactory.cs / EntityFactory.cs
-    │   ├── Economy/                      # SOMENTE contratos (interfaces) nesta etapa
-    │   │   ├── Money.cs
-    │   │   └── EconomyContracts.cs             # IBudget/IMarket/ITaxPolicy/IEconomySystem/…
+    │   ├── Economy/                      # Ciclo econômico sobre os contratos
+    │   │   ├── Money.cs / EconomyContracts.cs   # tipo Money + interfaces (IBudget/IMarket/…)
+    │   │   ├── Budget.cs / Ledger.cs / Market.cs / TaxPolicy.cs / EconomicAgent.cs
+    │   │   ├── EconomySettings.cs               # constantes tunáveis (impostos/manutenção)
+    │   │   └── EconomySystem.cs                 # impostos + mercados + manutenção -> tesouro
     │   ├── Presentation/                 # Contratos de View (implementados pela engine)
     │   │   ├── IRenderer.cs / Color32.cs / TileVisual.cs
     │   │   └── IProceduralSpriteFactory.cs / PlaceholderSpriteFactory.cs
@@ -213,12 +215,28 @@ de flow field da fundação serve tanto para multidões quanto para serviços/ut
 - **Observer / Pub-Sub** — `EventBus` (copy-on-write, sem alocação no publish) é a única via
   da simulação para a UI. A UI **observa**; a simulação nunca chama a UI.
 
-## Economia (somente contratos)
+## Economia (milestone atual)
 
-Nada de lógica econômica nesta etapa — apenas as **interfaces** e os **structs de dados**
-onde a matemática se conectará: `IEconomicAgent`, `IBudget`, `ILedger`, `IMarket`,
-`ITaxPolicy`, `IEconomySystem` e o tipo `Money` (inteiro, determinístico). Um sistema
-econômico futuro implementa esses contratos sem tocar no resto do core.
+Ciclo econômico da cidade implementado **sobre os contratos** já existentes, amarrando os
+milestones anteriores num laço financeiro:
+
+- **`EconomySystem`** (`IEconomySystem`, cadência lenta) — a cada tick econômico: **taxa** as
+  zonas desenvolvidas (base tributária por tipo × nível × alíquota), **equilibra os mercados**
+  de trabalho/bens a partir da oferta/demanda das zonas, **fatura** o serviço de utilidades e
+  **cobra manutenção** de utilidades + infraestrutura viária, então **liquida o tesouro** e
+  publica `BudgetChangedEvent` + `MarketClearedEvent`.
+- **`Budget`** (`IBudget`) — tesouro: receitas/despesas acumulam por período; `Settle()` aplica
+  o líquido ao saldo e reinicia o período (totais por categoria para o painel).
+- **`Market`** (`IMarket`) — preço de equilíbrio a partir da razão demanda/oferta (limitada).
+- **`TaxPolicy`** (`ITaxPolicy`) — alíquotas por zona, mutáveis por **comando** do jogador
+  (`SetTaxRateCommand` já opera sobre este contrato — comando → economia, com undo).
+- **`Ledger`** (`ILedger`) e **`EconomicAgent`** (`IEconomicAgent`) — registro de transações e
+  agente genérico portador de fundos, prontos para agentes por-empresa/domicílio.
+
+Tudo em `Money` inteiro e **determinístico** (somas independentes de ordem; sem RNG). A
+economia **observa** as utilidades via evento — não as consulta diretamente — mantendo o
+acoplamento fraco. Ordem de execução no tick: utilidades resolvem antes da economia, então a
+economia lê a cobertura mais recente.
 
 ## Apresentação / Placeholders
 
@@ -240,8 +258,9 @@ O programa exercita, sem nenhuma engine: pub/sub de eventos, comandos (zonear, c
 estrada, imposto) com undo/redo, ticks fixos determinísticos, crescimento por autômato
 celular, A* + flow field de Dijkstra, **tráfego** (veículos roteados que se movem, criam
 congestionamento e desviam), **utilidades** (cobertura de energia por flow field + brownout por
-capacidade), object pooling, factory a partir de definições e uma verificação de **determinismo**
-(duas execuções com a mesma semente produzem o mesmo resultado).
+capacidade), **economia** (impostos → tesouro, mercados, manutenção; comando de imposto com
+undo movendo a receita), object pooling, factory a partir de definições e uma verificação de
+**determinismo** (duas execuções com a mesma semente produzem o mesmo resultado).
 
 > **Compatibilidade de framework.** `CityBuilder.Core` mira **`netstandard2.1`** para ser
 > consumível por Unity (Mono/IL2CPP) e Godot 4 (.NET); o host de console mira `net8.0`.
@@ -259,7 +278,8 @@ capacidade), object pooling, factory a partir de definições e uma verificaçã
 
 - [x] **Tráfego & movimento** — agentes roteados por A*, congestionamento realimentado, pooling de rotas.
 - [x] **Utilidades** (energia/água) — cobertura por flow field de Dijkstra + alocação de capacidade (brownout).
-- [ ] **Crescimento populacional** e implementação da **economia** sobre os contratos existentes.
+- [x] **Economia** — impostos/mercados/manutenção → tesouro, sobre os contratos; comando de imposto integrado.
+- [ ] **Crescimento populacional** e agentes de demanda por-empresa/domicílio (o `EconomicAgent`/`Ledger` já existem).
 - [ ] **Serialização** de save/replay (o estado já é orientado a dados e determinístico).
 - [ ] **Multiplayer lockstep** sobre o fluxo de comandos.
 - [ ] Remoção estrutural completa em `FlowNetwork` (reciclagem de nós/arestas interiores).

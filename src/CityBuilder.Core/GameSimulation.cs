@@ -3,6 +3,7 @@ using CityBuilder.Common;
 using CityBuilder.Data;
 using CityBuilder.Ecs;
 using CityBuilder.Ecs.Components;
+using CityBuilder.Economy;
 using CityBuilder.Events;
 using CityBuilder.Events.Notifications;
 using CityBuilder.Grid;
@@ -47,6 +48,9 @@ public sealed class GameSimulation : ISimulationContext
     // Utilities layer: solves power/water coverage + capacity each slow tick.
     public UtilitySystem Utilities { get; }
 
+    // Economy layer: taxes, markets, upkeep and the city treasury.
+    public EconomySystem Economy { get; }
+
     // Exposed as the interface type (exact match => clean implicit implementation of
     // ISimulationContext.Events). The concrete bus is held privately; callers only need
     // Subscribe/Publish, which IEventBus provides.
@@ -75,6 +79,13 @@ public sealed class GameSimulation : ISimulationContext
         RoadCongestion = new CongestionWeightProvider();
         Pathfinder = new AStarPathfinder(Heuristics.Manhattan);
         Utilities = new UtilitySystem(Events);
+        Economy = new EconomySystem(
+            Map,
+            GetNetwork(NetworkType.Road),
+            Events,
+            startingBalance: Money.FromWhole(50_000),
+            settings: EconomySettings.Default,
+            tickInterval: Simulation.TickInterval.Slow);
 
         RegisterComponents();
         RegisterDefaultHeatMaps();
@@ -165,8 +176,10 @@ public sealed class GameSimulation : ISimulationContext
         // Utilities solve power/water coverage + capacity on a slow cadence (grids added later).
         Scheduler.Register(Utilities);
 
-        // Population and economy systems register here in later milestones, each choosing its
-        // own TickInterval. The scheduler already supports variable cadences.
+        // Economy runs after utilities each slow tick, so it sees the latest coverage reports.
+        Scheduler.Register(Economy);
+
+        // Population/demand agents and richer markets build on this in later milestones.
     }
 
     /// <summary>

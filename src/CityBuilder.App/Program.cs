@@ -4,6 +4,7 @@ using CityBuilder.Commands.Actions;
 using CityBuilder.Data;
 using CityBuilder.Ecs;
 using CityBuilder.Ecs.Components;
+using CityBuilder.Economy;
 using CityBuilder.Events.Notifications;
 using CityBuilder.Grid;
 using CityBuilder.Networks;
@@ -32,6 +33,21 @@ sim.Events.Subscribe<VehicleSpawnedEvent>(_ => spawned++);
 sim.Events.Subscribe<VehicleArrivedEvent>(_ => arrived++);
 int lastDeveloped = 0;
 sim.Events.Subscribe<ZoningUpdatedEvent>(e => lastDeveloped = e.DevelopedCells);
+
+// Economy snapshots (captured from events; printed later).
+Money ecoBalance = Money.Zero, ecoIncome = Money.Zero, ecoExpenses = Money.Zero;
+long ecoTick = 0, ecoPopulation = 0;
+sim.Events.Subscribe<BudgetChangedEvent>(e =>
+{
+    ecoBalance = e.Balance; ecoIncome = e.Income; ecoExpenses = e.Expenses;
+    ecoTick = e.Tick; ecoPopulation = e.Population;
+});
+Money labourPrice = Money.Zero, goodsPrice = Money.Zero;
+sim.Events.Subscribe<MarketClearedEvent>(e =>
+{
+    if (e.Resource == ResourceKind.Labour) labourPrice = e.Price;
+    else if (e.Resource == ResourceKind.Goods) goodsPrice = e.Price;
+});
 
 sim.Start();
 
@@ -124,6 +140,11 @@ for (int i = 0; i < 60; i++)
     sim.Step();
 }
 
+// --- Economy: taxes on zones + utility billing - infrastructure upkeep -> treasury ---
+Console.WriteLine("\n-- Economy (treasury / markets) --");
+Console.WriteLine($"  settle @tick {ecoTick}: balance={ecoBalance}, income={ecoIncome}, expenses={ecoExpenses}, population~{ecoPopulation}");
+Console.WriteLine($"  market prices: labour={labourPrice}, goods={goodsPrice}");
+
 // --- Object pooling ---
 Console.WriteLine("\n-- Object pooling --");
 var pool = new CityBuilder.Common.ObjectPool<Particle>(() => new Particle(), prewarm: 4);
@@ -140,18 +161,19 @@ IProceduralSpriteFactory sprites = new PlaceholderSpriteFactory();
 TileVisual grownZone = sprites.Zone(ZoneType.Residential, ZoneDensity.Medium, development: 120);
 Console.WriteLine($"grown residential -> shape={grownZone.Shape}, fill={grownZone.Fill}, height={grownZone.Height}");
 
-// --- Command pattern: undo / redo on the economy contract ---
-Console.WriteLine("\n-- Tax command + undo/redo (economy contract) --");
-var taxes = new DemoTaxPolicy();
-sim.Submit(new SetTaxRateCommand(taxes, ZoneType.Residential, 0.13f));
-Console.WriteLine($"After SetTax: {taxes.GetRate(ZoneType.Residential):0.00}");
+// --- Command pattern: a tax command that actually drives the economy, with undo ---
+Console.WriteLine("\n-- Tax command (drives the economy) + undo --");
+ITaxPolicy taxPolicy = sim.Economy.Taxes;
+Console.WriteLine($"Residential tax {taxPolicy.GetRate(ZoneType.Residential):0.00}, income {ecoIncome}, balance {ecoBalance}");
+sim.Submit(new SetTaxRateCommand(taxPolicy, ZoneType.Residential, 0.20f));
+for (int i = 0; i < 60; i++) sim.Step(); // let the economy re-settle at the new rate
+Console.WriteLine($"After SetTax 0.20 + settle: rate {taxPolicy.GetRate(ZoneType.Residential):0.00}, income {ecoIncome}");
 sim.Undo();
-Console.WriteLine($"After Undo:   {taxes.GetRate(ZoneType.Residential):0.00}");
-sim.Redo();
-Console.WriteLine($"After Redo:   {taxes.GetRate(ZoneType.Residential):0.00}");
+for (int i = 0; i < 60; i++) sim.Step();
+Console.WriteLine($"After Undo + settle:        rate {taxPolicy.GetRate(ZoneType.Residential):0.00}, income {ecoIncome}");
 
 // --- Determinism: identical seed + identical inputs => identical result (incl. traffic) ---
-Console.WriteLine("\n-- Determinism check (zoning + pathfinding + traffic + utilities) --");
+Console.WriteLine("\n-- Determinism check (zoning + pathfinding + traffic + utilities + economy) --");
 var runA = RunScenario(seed: 42, ticks: 300);
 var runB = RunScenario(seed: 42, ticks: 300);
 bool same = runA == runB;
@@ -176,17 +198,19 @@ static void SeedDesirability(GameSimulation sim, GridCoord min, GridCoord max, f
     }
 }
 
-// Returns (developedCells, arrivedVehicles, spawnedVehicles, powerServed) after a scripted run.
-static (int Developed, int Arrived, int Spawned, int PowerServed) RunScenario(ulong seed, int ticks)
+// Returns (developedCells, arrivedVehicles, spawnedVehicles, powerServed, treasuryUnits) after a scripted run.
+static (int Developed, int Arrived, int Spawned, int PowerServed, long Treasury) RunScenario(ulong seed, int ticks)
 {
     var s = new GameSimulation(new GameConfig(48, 48, seed));
     s.Definitions.LoadFrom(new InMemoryDefinitionSource()
         .Add(new VehicleDefinition { Id = "CompactHatch_Tier1", DisplayName = "Compact Hatchback", Class = VehicleClass.Passenger, MaxSpeed = 3f, Capacity = 4 }));
 
     int arrived = 0, spawned = 0, powerServed = 0;
+    long treasury = 0;
     s.Events.Subscribe<VehicleArrivedEvent>(_ => arrived++);
     s.Events.Subscribe<VehicleSpawnedEvent>(_ => spawned++);
     s.Events.Subscribe<UtilityUpdatedEvent>(e => powerServed = e.ServedConsumers);
+    s.Events.Subscribe<BudgetChangedEvent>(e => treasury = e.Balance.Units);
 
     RoadGridBuilder.BuildGrid(s.GetNetwork(NetworkType.Road), new GridCoord(4, 4), new GridCoord(12, 12), 1f, 6);
     SeedDesirability(s, new GridCoord(20, 20), new GridCoord(34, 34), 1.5f);
@@ -221,5 +245,5 @@ static (int Developed, int Arrived, int Spawned, int PowerServed) RunScenario(ul
         }
     }
 
-    return (developed, arrived, spawned, powerServed);
+    return (developed, arrived, spawned, powerServed, treasury);
 }
