@@ -16,10 +16,17 @@ public readonly struct TickContext
     /// <summary>Total simulated time in seconds (derived from <see cref="Tick"/>, deterministic).</summary>
     public readonly double GameSeconds;
 
-    public TickContext(long tick, int interval, double gameSeconds)
+    /// <summary>
+    /// Simulated seconds since this system's previous run (= Interval × secondsPerTick).
+    /// Fixed and deterministic — the correct dt for integrating movement/flows.
+    /// </summary>
+    public readonly double DeltaSeconds;
+
+    public TickContext(long tick, int interval, double gameSeconds, double deltaSeconds)
     {
         Tick = tick;
         Interval = interval;
         GameSeconds = gameSeconds;
+        DeltaSeconds = deltaSeconds;
     }
 }

@@ -61,16 +61,33 @@ citybuilderteste/
     │   ├── Networks/                     # 4) Logística & Rede de Fluxo (grafos)
     │   │   ├── NetworkType.cs / NetworkIds.cs / NetworkElements.cs
     │   │   ├── IFlowNetwork.cs / FlowNetwork.cs (lista de adjacência)
-    │   │   └── IEdgeWeightProvider.cs          # pesos DINÂMICOS (congestionamento)
+    │   │   ├── IEdgeWeightProvider.cs          # pesos DINÂMICOS (congestionamento)
+    │   │   └── RoadGridBuilder.cs              # helper p/ montar grade de ruas
     │   ├── Pathfinding/                  # Heurísticas & Algoritmos
     │   │   ├── IPathGraph.cs / PathNeighbor.cs / IHeuristic.cs / MinHeap.cs
     │   │   ├── AStarPathfinder.cs              # A* c/ pesos dinâmicos
     │   │   ├── DijkstraPathfinder.cs           # Dijkstra (A* com h=0)
     │   │   └── DijkstraMap.cs                  # Flow Field (serviços/multidões)
+    │   ├── Traffic/                      # Tráfego & Movimento (agentes sobre a rede)
+    │   │   ├── RouteTable.cs                   # rotas por veículo, buffers POOLED
+    │   │   ├── VehicleSpawner.cs               # cria veículos + rota via A* (congestion-aware)
+    │   │   ├── TrafficSystem.cs                # move agentes/tick, realimenta congestionamento
+    │   │   └── TrafficSpawnSystem.cs           # spawn contínuo (cadência própria)
+    │   ├── Utilities/                    # Utilidades (energia/água) — cobertura por flow field
+    │   │   ├── UtilityData.cs                  # UtilitySource / UtilityConsumer / UtilityReport
+    │   │   ├── UtilityGrid.cs                  # Dijkstra multi-fonte + alocação de capacidade
+    │   │   └── UtilitySystem.cs                # resolve por tick lento + publica relatório
     │   ├── Commands/                     # Padrão Command (undo/redo + base multiplayer)
     │   │   ├── ICommand.cs / CommandResult.cs / CommandHistory.cs
     │   │   ├── ICommandProcessor.cs / CommandProcessor.cs
+    │   │   ├── ICommandRecorder.cs             # gancho de gravação do fluxo de comandos
     │   │   └── Actions/                        # BuildRoad, ZoneArea, Bulldoze, SetTaxRate
+    │   ├── Persistence/                  # Save binário + Replay determinístico
+    │   │   ├── SaveGame.cs                     # snapshot: config/clock/RNG/mapa/redes/economia
+    │   │   ├── ReplayLog.cs                    # log (tick, ação) + ReplayRecorder
+    │   │   ├── CommandCodec.cs                 # comandos <-> bytes (replay hoje, rede depois)
+    │   │   ├── ReplayPlayer.cs                 # reaplica o log na mesma cadência
+    │   │   └── StateChecksum.cs                # FNV-1a do estado (verificação/desync)
     │   ├── Events/                       # Observer / Pub-Sub (Simulação -> UI)
     │   │   ├── IEvent.cs / IEventBus.cs / EventBus.cs (copy-on-write)
     │   │   └── Notifications/SimulationEvents.cs
@@ -78,9 +95,11 @@ citybuilderteste/
     │   │   ├── IDefinition.cs / Definitions.cs (Building/Vehicle/Infrastructure)
     │   │   ├── IDefinitionSource.cs / DefinitionRegistry.cs
     │   │   └── IEntityFactory.cs / EntityFactory.cs
-    │   ├── Economy/                      # SOMENTE contratos (interfaces) nesta etapa
-    │   │   ├── Money.cs
-    │   │   └── EconomyContracts.cs             # IBudget/IMarket/ITaxPolicy/IEconomySystem/…
+    │   ├── Economy/                      # Ciclo econômico sobre os contratos
+    │   │   ├── Money.cs / EconomyContracts.cs   # tipo Money + interfaces (IBudget/IMarket/…)
+    │   │   ├── Budget.cs / Ledger.cs / Market.cs / TaxPolicy.cs / EconomicAgent.cs
+    │   │   ├── EconomySettings.cs               # constantes tunáveis (impostos/manutenção)
+    │   │   └── EconomySystem.cs                 # impostos + mercados + manutenção -> tesouro
     │   ├── Presentation/                 # Contratos de View (implementados pela engine)
     │   │   ├── IRenderer.cs / Color32.cs / TileVisual.cs
     │   │   └── IProceduralSpriteFactory.cs / PlaceholderSpriteFactory.cs
@@ -148,6 +167,48 @@ citybuilderteste/
   milhares de buscas individuais (multidões seguem o campo; cobertura de bombeiros/polícia/
   hospital é lida direto).
 
+## Tráfego & Movimento (milestone atual)
+
+Primeira camada de agentes viva sobre a arquitetura — conecta pathfinding + ECS + rede +
+tick engine + pooling em um laço fechado:
+
+- **`VehicleSpawner`** — cria um veículo (via `EntityFactory`) e calcula sua rota com **A*
+  usando os pesos de congestionamento vigentes**; um veículo que nasce num congestionamento
+  já é roteado por fora dele. O buffer da rota vem do pool.
+- **`RouteTable`** — guarda as rotas por veículo em `List<int>` **pooled** (Object Pooling
+  aplicado às rotas): tráfego sustentado não gera lixo de GC.
+- **`TrafficSystem`** (`ISimulationSystem`, cadência *Fast*) — a cada tick integra o progresso
+  com `TickContext.DeltaSeconds` (determinístico), passa o agente de aresta em aresta,
+  **atualiza a carga de cada aresta** (que realimenta o roteamento) e, na chegada, publica
+  evento e recicla id da entidade + buffer da rota. Eventos de chegada são **adiados** para
+  depois da varredura (não perturbam o `Span` em iteração).
+- **`TrafficSpawnSystem`** (cadência própria, mais grossa) — mantém um fluxo contínuo até um
+  teto, demonstrando o escalonador rodando sistemas em frequências diferentes.
+
+O laço de realimentação (veículos → carga nas arestas → pesos do A* → novas rotas desviam) é
+totalmente determinístico: o app headless roda o mesmo cenário duas vezes com a mesma semente
+e compara `(células desenvolvidas, chegadas, spawns, consumidores atendidos)`.
+
+## Utilidades & Cobertura de Serviço (milestone atual)
+
+Energia/água modeladas como **cobertura por flow field de Dijkstra** — o mesmo algoritmo dos
+mapas de serviço (bombeiros/polícia/hospital):
+
+- **`UtilityGrid`** — um serviço (energia OU água) sobre sua `FlowNetwork`. A cobertura é um
+  **Dijkstra multi-fonte** a partir dos nós de fonte: em **uma passada** todo nó aprende o
+  custo até a fonte mais próxima, então "este consumidor está conectado e no alcance?" é O(1)
+  — sem uma busca por consumidor. A capacidade é então alocada **do mais próximo ao mais
+  distante**, gerando *brownouts* realistas quando a demanda supera a oferta. Determinístico
+  (sem RNG; ordenação estável por distância).
+- **`UtilitySource` / `UtilityConsumer` / `UtilityReport`** — structs de dados: ponto de oferta
+  (nó + capacidade), ponto de demanda (nó + consumo, marcado como atendido pelo solve) e o
+  relatório da rede (oferta, demanda, demanda alcançável, demanda atendida, *brownout*).
+- **`UtilitySystem`** (`ISimulationSystem`, cadência lenta) — resolve cada grid por tick e
+  publica um `UtilityUpdatedEvent`. A UI lê para os painéis de energia/água e avisos de apagão.
+
+Reaproveita `DijkstraMap` sem qualquer código novo de pathfinding — a prova de que a heurística
+de flow field da fundação serve tanto para multidões quanto para serviços/utilidades.
+
 ## Padrões de Projeto
 
 - **Object Pooling** — `ObjectPool<T>` (+ `IPoolable`) recicla atores de alta rotatividade
@@ -161,12 +222,56 @@ citybuilderteste/
 - **Observer / Pub-Sub** — `EventBus` (copy-on-write, sem alocação no publish) é a única via
   da simulação para a UI. A UI **observa**; a simulação nunca chama a UI.
 
-## Economia (somente contratos)
+## Economia (milestone atual)
 
-Nada de lógica econômica nesta etapa — apenas as **interfaces** e os **structs de dados**
-onde a matemática se conectará: `IEconomicAgent`, `IBudget`, `ILedger`, `IMarket`,
-`ITaxPolicy`, `IEconomySystem` e o tipo `Money` (inteiro, determinístico). Um sistema
-econômico futuro implementa esses contratos sem tocar no resto do core.
+Ciclo econômico da cidade implementado **sobre os contratos** já existentes, amarrando os
+milestones anteriores num laço financeiro:
+
+- **`EconomySystem`** (`IEconomySystem`, cadência lenta) — a cada tick econômico: **taxa** as
+  zonas desenvolvidas (base tributária por tipo × nível × alíquota), **equilibra os mercados**
+  de trabalho/bens a partir da oferta/demanda das zonas, **fatura** o serviço de utilidades e
+  **cobra manutenção** de utilidades + infraestrutura viária, então **liquida o tesouro** e
+  publica `BudgetChangedEvent` + `MarketClearedEvent`.
+- **`Budget`** (`IBudget`) — tesouro: receitas/despesas acumulam por período; `Settle()` aplica
+  o líquido ao saldo e reinicia o período (totais por categoria para o painel).
+- **`Market`** (`IMarket`) — preço de equilíbrio a partir da razão demanda/oferta (limitada).
+- **`TaxPolicy`** (`ITaxPolicy`) — alíquotas por zona, mutáveis por **comando** do jogador
+  (`SetTaxRateCommand` já opera sobre este contrato — comando → economia, com undo).
+- **`Ledger`** (`ILedger`) e **`EconomicAgent`** (`IEconomicAgent`) — registro de transações e
+  agente genérico portador de fundos, prontos para agentes por-empresa/domicílio.
+
+Tudo em `Money` inteiro e **determinístico** (somas independentes de ordem; sem RNG). A
+economia **observa** as utilidades via evento — não as consulta diretamente — mantendo o
+acoplamento fraco. Ordem de execução no tick: utilidades resolvem antes da economia, então a
+economia lê a cobertura mais recente.
+
+## Persistência & Replay (milestone atual)
+
+A materialização do investimento em determinismo — e a fundação direta do multiplayer lockstep:
+
+- **`SaveGame`** — snapshot **binário** do estado persistente (config, tick, estado do RNG,
+  terreno, zoneamento, mapas de calor, redes com ids preservados, grids de utilidade, tesouro,
+  alíquotas e edifícios), campo a campo, sem reflexão nem dependências externas. Estado
+  **transiente** (veículos em trânsito, rotas, congestionamento, preços de mercado) **não** é
+  salvo por decisão de projeto: os sistemas o regeneram após o load. Carregar é **reconstruir**:
+  `ReadConfig` → construir a simulação → mesmo bootstrap de um jogo novo (definições/sistemas,
+  sem conteúdo de mundo) → `ReadInto`. Edifícios renascem **pela factory**, então o load emite
+  os mesmos eventos de construção — a view se reconstrói observando, como sempre.
+- **`ReplayLog` + `ReplayRecorder`** — o `CommandProcessor` ganhou um gancho
+  (`ICommandRecorder`) que captura cada ação bem-sucedida como `(tick, ação)`; undo/redo entram
+  como marcadores (o processador repõe da própria história no replay).
+- **`CommandCodec`** — formato de fio dos comandos (id numérico + payload por tipo). Serve ao
+  arquivo de replay hoje e a pacotes de rede (lockstep) amanhã; o leitor religa comandos aos
+  serviços vivos (ex.: `SetTaxRateCommand` → política tributária da simulação alvo).
+- **`ReplayPlayer`** — reaplica o log num mundo recém-bootstrapado **na mesma cadência**
+  (roda ticks até o tick gravado, aplica a ação). Trocar "ler do arquivo" por "ler da rede"
+  transforma esse laço num cliente lockstep.
+- **`StateChecksum`** — digest FNV-1a 64-bit do estado persistente. Save/load e replay são
+  verificados comparando um número; em multiplayer, é o detector de dessincronização (peers
+  trocam checksums a cada N ticks).
+
+O demo headless prova as duas pontas: snapshot → load com checksum idêntico, e sessão gravada
+(zonear, subir imposto, undo) → serializar → replay com checksum idêntico.
 
 ## Apresentação / Placeholders
 
@@ -186,9 +291,13 @@ dotnet run --project src/CityBuilder.App
 
 O programa exercita, sem nenhuma engine: pub/sub de eventos, comandos (zonear, construir
 estrada, imposto) com undo/redo, ticks fixos determinísticos, crescimento por autômato
-celular, A* (estático e congestionado), flow field de Dijkstra, object pooling, factory a
-partir de definições e uma verificação de **determinismo** (duas execuções com a mesma
-semente produzem o mesmo resultado).
+celular, A* + flow field de Dijkstra, **tráfego** (veículos roteados que se movem, criam
+congestionamento e desviam), **utilidades** (cobertura de energia por flow field + brownout por
+capacidade), **economia** (impostos → tesouro, mercados, manutenção; comando de imposto com
+undo movendo a receita), **persistência** (save binário → load com checksum idêntico),
+**replay** (log de comandos serializado reproduzindo o estado exato), object pooling, factory a
+partir de definições e uma verificação de **determinismo** (duas execuções com a mesma semente
+produzem o mesmo resultado).
 
 > **Compatibilidade de framework.** `CityBuilder.Core` mira **`netstandard2.1`** para ser
 > consumível por Unity (Mono/IL2CPP) e Godot 4 (.NET); o host de console mira `net8.0`.
@@ -202,10 +311,12 @@ semente produzem o mesmo resultado).
    refletir mudanças na UI. Traduza `ScreenPoint`/`Color32`/`TileVisual` para os tipos da engine.
 4. A camada de simulação permanece **intacta e determinística**.
 
-## Roadmap (próximas etapas)
+## Roadmap
 
-- Sistemas de **tráfego** (agentes seguindo caminhos/flow fields) e **utilidades** (energia/água).
-- **Crescimento populacional** e implementação da **economia** sobre os contratos existentes.
-- **Serialização** de save/replay (o estado já é orientado a dados e determinístico).
-- **Multiplayer lockstep** sobre o fluxo de comandos.
-- Remoção estrutural completa em `FlowNetwork` (reciclagem de nós/arestas interiores).
+- [x] **Tráfego & movimento** — agentes roteados por A*, congestionamento realimentado, pooling de rotas.
+- [x] **Utilidades** (energia/água) — cobertura por flow field de Dijkstra + alocação de capacidade (brownout).
+- [x] **Economia** — impostos/mercados/manutenção → tesouro, sobre os contratos; comando de imposto integrado.
+- [x] **Persistência & Replay** — save binário, log de comandos serializável, replay na mesma cadência, checksum de estado.
+- [ ] **Crescimento populacional** e agentes de demanda por-empresa/domicílio (o `EconomicAgent`/`Ledger` já existem).
+- [ ] **Multiplayer lockstep** sobre o fluxo de comandos (codec/replay/checksum já são os blocos de construção).
+- [ ] Remoção estrutural completa em `FlowNetwork` (reciclagem de nós/arestas interiores).

@@ -29,8 +29,11 @@ dotnet run --project src/CityBuilder.App
 - **Zoneamento & Autômatos Celulares** — mapas de calor (desejabilidade/poluição/crime) + CA com double-buffer.
 - **Logística & Rede de Fluxo** — grafos de rodovia/ferrovia/água/energia com pesos dinâmicos.
 - **Pathfinding** — A* (pesos dinâmicos de congestionamento), Dijkstra e *flow fields* (Dijkstra maps).
+- **Tráfego & Movimento** — veículos roteados por A* que se movem, criam congestionamento e desviam; buffers de rota *pooled*.
+- **Utilidades** — energia/água por cobertura de flow field de Dijkstra + alocação de capacidade (brownout).
 - **Padrões** — Object Pooling, Factory (orientado a dados), Command (undo/redo + base multiplayer) e Observer/Pub-Sub.
-- **Economia** — apenas contratos (interfaces) para conexão futura.
+- **Economia** — ciclo sobre os contratos: impostos das zonas + faturamento de utilidades − manutenção → tesouro, com mercados de trabalho/bens (comando de imposto integrado, com undo).
+- **Persistência & Replay** — save binário do estado persistente, log de comandos serializável e replay determinístico verificado por checksum (fundação do multiplayer lockstep).
 - **Apresentação** — contratos de view + geração procedural de *placeholders* (polígonos coloridos isométricos).
 
 Detalhes completos, decisões de projeto e diretório comentado: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).

@@ -25,6 +25,12 @@ public sealed class ZoneAreaCommand : ICommand
         _density = density;
     }
 
+    // Read-only views of the captured parameters (used by the replay codec).
+    public GridCoord Min => _min;
+    public GridCoord Max => _max;
+    public ZoneType Type => _type;
+    public ZoneDensity Density => _density;
+
     public string Name => $"Zone({_type},{_density})";
 
     public bool CanExecute(ISimulationContext context)

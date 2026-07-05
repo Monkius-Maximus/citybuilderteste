@@ -3,11 +3,15 @@ using CityBuilder.Common;
 using CityBuilder.Data;
 using CityBuilder.Ecs;
 using CityBuilder.Ecs.Components;
+using CityBuilder.Economy;
 using CityBuilder.Events;
 using CityBuilder.Events.Notifications;
 using CityBuilder.Grid;
 using CityBuilder.Networks;
+using CityBuilder.Pathfinding;
 using CityBuilder.Simulation;
+using CityBuilder.Traffic;
+using CityBuilder.Utilities;
 using CityBuilder.Zoning;
 using CityBuilder.Zoning.Rules;
 
@@ -36,6 +40,17 @@ public sealed class GameSimulation : ISimulationContext
     public EntityFactory Factory { get; }
     public CommandProcessor Commands { get; }
 
+    // Traffic layer: shared routing scratch, live road congestion, and the pooled route table.
+    public RouteTable Routes { get; }
+    public CongestionWeightProvider RoadCongestion { get; }
+    public AStarPathfinder Pathfinder { get; }
+
+    // Utilities layer: solves power/water coverage + capacity each slow tick.
+    public UtilitySystem Utilities { get; }
+
+    // Economy layer: taxes, markets, upkeep and the city treasury.
+    public EconomySystem Economy { get; }
+
     // Exposed as the interface type (exact match => clean implicit implementation of
     // ISimulationContext.Events). The concrete bus is held privately; callers only need
     // Subscribe/Publish, which IEventBus provides.
@@ -59,6 +74,18 @@ public sealed class GameSimulation : ISimulationContext
         Definitions = new DefinitionRegistry();
         Factory = new EntityFactory(Entities, Definitions, Events);
         Commands = new CommandProcessor(this);
+
+        Routes = new RouteTable();
+        RoadCongestion = new CongestionWeightProvider();
+        Pathfinder = new AStarPathfinder(Heuristics.Manhattan);
+        Utilities = new UtilitySystem(Events);
+        Economy = new EconomySystem(
+            Map,
+            GetNetwork(NetworkType.Road),
+            Events,
+            startingBalance: Money.FromWhole(50_000),
+            settings: EconomySettings.Default,
+            tickInterval: Simulation.TickInterval.Slow);
 
         RegisterComponents();
         RegisterDefaultHeatMaps();
@@ -142,7 +169,34 @@ public sealed class GameSimulation : ISimulationContext
         var zoning = new ZoningSystem(Map, HeatMaps, automata, Events, Random);
         Scheduler.Register(zoning);
 
-        // Traffic, utilities, population and economy systems register here in later milestones,
-        // each choosing its own TickInterval. The scheduler already supports variable cadences.
+        // Traffic movement runs every tick; it advances routed vehicles and updates congestion.
+        FlowNetwork road = GetNetwork(NetworkType.Road);
+        Scheduler.Register(new TrafficSystem(Entities, road, RoadCongestion, Routes, Events));
+
+        // Utilities solve power/water coverage + capacity on a slow cadence (grids added later).
+        Scheduler.Register(Utilities);
+
+        // Economy runs after utilities each slow tick, so it sees the latest coverage reports.
+        Scheduler.Register(Economy);
+
+        // Population/demand agents and richer markets build on this in later milestones.
     }
-}
+
+    /// <summary>
+    /// Create a utility service (power/water) over its network and register it with the utility
+    /// system. Add sources/consumers to the returned grid, then it is solved each slow tick.
+    /// </summary>
+    public UtilityGrid CreateUtility(NetworkType kind)
+    {
+        var grid = new UtilityGrid(kind, GetNetwork(kind));
+        Utilities.AddGrid(grid);
+        return grid;
+    }
+
+    /// <summary>
+    /// Build a spawner for a vehicle definition, wired to the road network, live congestion and
+    /// the pooled route table. Call after the vehicle definition has been loaded. Wrap the result
+    /// in a <see cref="TrafficSpawnSystem"/> and register it to generate continuous traffic.
+    /// </summary>
+    public VehicleSpawner CreateVehicleSpawner(string vehicleDefinitionId)
+        => new(Entities, Factory, GetNetwork(NetworkType.Road), Pathfinder, RoadCongestion, Routes, Events, vehicleDefinitionId);

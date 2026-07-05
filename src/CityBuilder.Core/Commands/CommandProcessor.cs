@@ -23,6 +23,9 @@ public sealed class CommandProcessor : ICommandProcessor
     public bool CanUndo => _history.CanUndo;
     public bool CanRedo => _history.CanRedo;
 
+    /// <summary>Optional replay/telemetry recorder notified of every successful mutation.</summary>
+    public ICommandRecorder? Recorder { get; set; }
+
     public CommandResult Submit(ICommand command)
     {
         if (command is null)
@@ -41,6 +44,7 @@ public sealed class CommandProcessor : ICommandProcessor
         if (result.Success)
         {
             _history.Record(command);
+            Recorder?.OnExecuted(command, _context.CurrentTick);
         }
 
         Notify(command, result);
@@ -56,6 +60,7 @@ public sealed class CommandProcessor : ICommandProcessor
 
         command.Undo(_context);
         _history.PushRedo(command);
+        Recorder?.OnUndone(command, _context.CurrentTick);
         _context.Events.Publish(new CommandExecutedEvent($"Undo:{command.Name}", true, null));
         return true;
     }
@@ -69,6 +74,7 @@ public sealed class CommandProcessor : ICommandProcessor
 
         command.Execute(_context);
         _history.PushUndo(command);
+        Recorder?.OnRedone(command, _context.CurrentTick);
         _context.Events.Publish(new CommandExecutedEvent($"Redo:{command.Name}", true, null));
         return true;
     }

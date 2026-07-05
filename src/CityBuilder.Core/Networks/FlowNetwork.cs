@@ -110,6 +110,26 @@ public sealed class FlowNetwork : IFlowNetwork, IPathGraph
         }
     }
 
+    /// <summary>Find the directed edge from one node to an adjacent one (linear over a small degree).</summary>
+    public bool TryGetNeighbor(int from, int to, out PathNeighbor neighbor)
+    {
+        if (from >= 0 && from < _adjacency.Count)
+        {
+            List<PathNeighbor> list = _adjacency[from];
+            for (int i = 0; i < list.Count; i++)
+            {
+                if (list[i].Node == to)
+                {
+                    neighbor = list[i];
+                    return true;
+                }
+            }
+        }
+
+        neighbor = default;
+        return false;
+    }
+
     // --- IPathGraph ---
 
     public GridCoord GetCoord(int node) => _nodes[node].Coord;

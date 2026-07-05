@@ -22,6 +22,10 @@ public sealed class BulldozeAreaCommand : ICommand
         _max = new GridCoord(Math.Max(a.X, b.X), Math.Max(a.Y, b.Y));
     }
 
+    // Read-only views of the captured parameters (used by the replay codec).
+    public GridCoord Min => _min;
+    public GridCoord Max => _max;
+
     public string Name => $"Bulldoze({_min}..{_max})";
 
     public bool CanExecute(ISimulationContext context)
