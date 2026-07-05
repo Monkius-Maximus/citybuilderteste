@@ -83,7 +83,8 @@ citybuilderteste/
     │   │   ├── ICommandRecorder.cs             # gancho de gravação do fluxo de comandos
     │   │   └── Actions/                        # BuildRoad, ZoneArea, Bulldoze, SetTaxRate
     │   ├── Persistence/                  # Save binário + Replay determinístico
-    │   │   ├── SaveGame.cs                     # snapshot: config/clock/RNG/mapa/redes/economia
+    │   │   ├── SaveGame.cs                     # snapshot v2: config+METADADOS+estado
+    │   │   ├── SaveMetadata.cs                 # cabeçalho barato p/ a tela Load City
     │   │   ├── ReplayLog.cs                    # log (tick, ação) + ReplayRecorder
     │   │   ├── CommandCodec.cs                 # comandos <-> bytes (replay hoje, rede depois)
     │   │   ├── ReplayPlayer.cs                 # reaplica o log na mesma cadência
@@ -102,7 +103,14 @@ citybuilderteste/
     │   │   └── EconomySystem.cs                 # impostos + mercados + manutenção -> tesouro
     │   ├── Presentation/                 # Contratos de View (implementados pela engine)
     │   │   ├── IRenderer.cs / Color32.cs / TileVisual.cs
-    │   │   └── IProceduralSpriteFactory.cs / PlaceholderSpriteFactory.cs
+    │   │   ├── IProceduralSpriteFactory.cs / PlaceholderSpriteFactory.cs
+    │   │   └── AegeanMarbleTheme.cs            # tokens da identidade visual aprovada (1a)
+    │   ├── Shell/                        # Fluxo pré-jogo (menus) — view-models engine-agnostic
+    │   │   ├── GameShell.cs                    # máquina de telas Title/New/Load/Settings/InGame
+    │   │   ├── NewCityForm.cs                  # "Found a New City" (nome/tamanho/seed/terreno)
+    │   │   ├── GameSettings.cs                 # Settings c/ BACK-descarta / APPLY-comita + persistência
+    │   │   ├── SaveCatalog.cs                  # lista de saves p/ "Load City" + tempo relativo
+    │   │   └── GameInfo.cs                     # marca/copy: THE GAME OF POLIS, §, rodapé
     │   ├── ISimulationContext.cs         # superfície de acesso p/ comandos e sistemas
     │   ├── GameConfig.cs
     │   └── GameSimulation.cs             # COMPOSITION ROOT (liga tudo, dirige os ticks)
@@ -273,6 +281,40 @@ A materialização do investimento em determinismo — e a fundação direta do 
 O demo headless prova as duas pontas: snapshot → load com checksum idêntico, e sessão gravada
 (zonear, subir imposto, undo) → serializar → replay com checksum idêntico.
 
+## Shell de Jogo & Identidade Visual "Aegean Marble" (milestone atual)
+
+O jogo agora tem nome — **THE GAME OF POLIS** — e uma direção visual aprovada (handoff em
+`docs/design/main-menu/`, opção **1a "Aegean Marble"**: pergaminho, serifadas Marcellus/Lora,
+filetes dourados, azul Egeu). A integração segue a regra do handoff: *recriar no ambiente-alvo,
+não copiar o HTML* — então o Core ganhou a camada engine-agnostic que qualquer frontend liga:
+
+- **`AegeanMarbleTheme`** — todos os tokens do handoff como dados (`Color32` + escala
+  tipográfica + métricas de layout). Fonte única de verdade para Unity/Godot/web reproduzirem
+  os menus pixel-perfect.
+- **`GameShell`** — máquina de telas do protótipo (`Title/NewCity/LoadCity/Settings/InGame`)
+  com eventos de navegação; a view só renderiza `Screen` e chama os métodos dos botões.
+- **`NewCityForm`** — o formulário "Found a New City": nome (padrão *Nova Polis*), cartões de
+  tamanho (`Hamlet 64 / Township 128 / Metropolis 256`), seed com RANDOMIZE (6 dígitos; texto
+  não-numérico vira seed por hash FNV) e preset de terreno. `CreateConfig()` → `GameConfig`
+  (que agora carrega **nome da cidade** e **terreno**).
+- **`TerrainGenerator`** — geração procedural **determinística** por preset (*Verdant Plains /
+  River Delta / Coastal Reach / Highlands*): value-noise por hash inteiro (sem transcendentais
+  → bit-idêntico em qualquer plataforma). Roda na fundação; loads restauram do snapshot.
+- **`GameCalendar`** — tick → "Year 4 — Spring" (aritmética inteira), usado na tela Load e em
+  modificadores sazonais futuros.
+- **`SaveGame` v2 + `SaveMetadata` + `SaveCatalog`** — o save ganhou um **bloco de metadados**
+  (nome, população, tesouro, tick, salvo-em) legível **sem carregar o mundo**; `SaveCatalog`
+  varre a pasta de saves (`*.polis`) e entrega as linhas da tela Load já ordenadas
+  ("Population 12,480 · § 45,120 · Year 4 — Spring" + tempo relativo).
+- **`GameSettings`** — o modelo persistido da tela Settings (áudio/gráficos/gameplay, com os
+  defaults do design) e a semântica exata BACK-descarta / APPLY-comita (`BeginEdit/Apply/Discard`).
+- **`Money`** agora exibe o glifo **§** do design ("§ 45,120"); `GameInfo` centraliza a marca
+  (título, tagline, versão, rodapé) para todos os frontends.
+
+O demo headless percorre o fluxo inteiro: fundar *Nova Polis* (Township, seed 314159, Verdant
+Plains) → gerar terreno (censo por preset) → crescer → salvar duas cidades → listar como a tela
+Load City → Settings com BACK/APPLY + round-trip de persistência.
+
 ## Apresentação / Placeholders
 
 - **`IRenderer`** — contrato de desenho implementado pela engine (a simulação **não** o chama).
@@ -317,6 +359,8 @@ produzem o mesmo resultado).
 - [x] **Utilidades** (energia/água) — cobertura por flow field de Dijkstra + alocação de capacidade (brownout).
 - [x] **Economia** — impostos/mercados/manutenção → tesouro, sobre os contratos; comando de imposto integrado.
 - [x] **Persistência & Replay** — save binário, log de comandos serializável, replay na mesma cadência, checksum de estado.
+- [x] **Shell & identidade visual** — tokens "Aegean Marble", máquina de telas, New City/Load/Settings, terreno procedural, calendário, save v2 c/ metadados.
+- [ ] **HUD in-game** (fase 2 do design — o handoff marca o ponto de entrega no stub in-game).
 - [ ] **Crescimento populacional** e agentes de demanda por-empresa/domicílio (o `EconomicAgent`/`Ledger` já existem).
 - [ ] **Multiplayer lockstep** sobre o fluxo de comandos (codec/replay/checksum já são os blocos de construção).
 - [ ] Remoção estrutural completa em `FlowNetwork` (reciclagem de nós/arestas interiores).

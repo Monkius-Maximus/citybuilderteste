@@ -29,7 +29,10 @@ namespace CityBuilder.Persistence;
 /// </summary>
 public static class SaveGame
 {
-    private const int Version = 1;
+    // v2: config carries city name + terrain preset, and a fast METADATA block (population,
+    // treasury, tick, saved-at) sits before the state so the Load City screen can list saves
+    // without deserialising whole worlds.
+    private const int Version = 2;
     private static readonly byte[] Magic = { (byte)'C', (byte)'B', (byte)'S', (byte)'V' };
 
     // Fixed enumeration orders so the byte stream never depends on dictionary ordering.
@@ -57,6 +60,14 @@ public static class SaveGame
         w.Write(sim.Config.Height);
         w.Write(sim.Config.Seed);
         w.Write(sim.Config.TicksPerSecond);
+        w.Write(sim.Config.CityName ?? "New City"); // a default-constructed config has a null name
+        w.Write((byte)sim.Config.Terrain);
+
+        // Metadata block (Load City screen reads only this far).
+        w.Write(ZoningStats.Population(sim.Map.Zoning));
+        w.Write(sim.Economy.Balance.Units);
+        w.Write(sim.CurrentTick);
+        w.Write(DateTime.UtcNow.Ticks); // wall-clock label only — never used by the simulation
 
         // Clock + RNG.
         w.Write(sim.CurrentTick);
@@ -178,6 +189,25 @@ public static class SaveGame
     }
 
     /// <summary>
+    /// Read the cheap metadata for the Load City screen (stream positioned at the save's start):
+    /// name, size, population, treasury, game date and when it was saved — without touching the
+    /// world state that follows.
+    /// </summary>
+    public static SaveMetadata ReadMetadata(Stream stream)
+    {
+        using var r = new BinaryReader(stream, Encoding.UTF8, leaveOpen: true);
+        ReadHeader(r);
+        GameConfig config = ReadConfigBody(r);
+
+        long population = r.ReadInt64();
+        var treasury = new Money(r.ReadInt64());
+        long tick = r.ReadInt64();
+        var savedAtUtc = new DateTime(r.ReadInt64(), DateTimeKind.Utc);
+
+        return new SaveMetadata(config, population, treasury, tick, savedAtUtc);
+    }
+
+    /// <summary>
     /// Restore a full snapshot into a freshly constructed, bootstrapped simulation. The stream
     /// must be positioned at the START of the save (the header is re-read and re-verified).
     /// </summary>
@@ -192,6 +222,12 @@ public static class SaveGame
             throw new InvalidOperationException(
                 "Save/simulation config mismatch: construct the simulation from SaveGame.ReadConfig(...) first.");
         }
+
+        // Skip the metadata block (display-only; the state that follows is authoritative).
+        r.ReadInt64(); // population
+        r.ReadInt64(); // treasury units
+        r.ReadInt64(); // tick
+        r.ReadInt64(); // saved-at utc
 
         // Clock + RNG.
         sim.Clock.Restore(r.ReadInt64());
@@ -329,6 +365,8 @@ public static class SaveGame
         int height = r.ReadInt32();
         ulong seed = r.ReadUInt64();
         double ticksPerSecond = r.ReadDouble();
-        return new GameConfig(width, height, seed, ticksPerSecond);
+        string cityName = r.ReadString();
+        var terrain = (TerrainPreset)r.ReadByte();
+        return new GameConfig(width, height, seed, ticksPerSecond, cityName, terrain);
     }
 }

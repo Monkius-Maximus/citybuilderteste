@@ -38,5 +38,7 @@ public readonly struct Money : IEquatable<Money>, IComparable<Money>
     public static bool operator <=(Money a, Money b) => a.Units <= b.Units;
     public static bool operator >=(Money a, Money b) => a.Units >= b.Units;
 
-    public override string ToString() => $"${ToDecimal():0.00}";
+    /// <summary>Display format from the design handoff: "§ 45,120" (whole units, thousands separators).</summary>
+    public override string ToString()
+        => "§ " + (Units / 100).ToString("N0", System.Globalization.CultureInfo.InvariantCulture);
 }

@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Marcellus&amp;family=Lora:ital,wght@0,400;0,500;0,600;1,400&amp;family=Barlow+Semi+Condensed:wght@500;600;700&amp;family=Barlow:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;display=swap">
+<style>
+  body { margin: 0; background: #14161b; }
+  @keyframes polisFade { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+  @keyframes polisBlink { 0%, 55% { opacity: 1; } 56%, 100% { opacity: 0; } }
+</style>
+</helmet>
+<section style="display:flex;flex-direction:column;gap:26px;padding:56px;align-items:flex-start">
+  <div style="display:flex;align-items:center;gap:14px;font-family:Barlow,sans-serif">
+    <div style="background:#252a33;color:#aeb8c6;border:1px solid #343b47;border-radius:999px;padding:7px 16px;font-size:12px;font-weight:600;letter-spacing:.14em">TURN 1 · THE GAME OF POLIS — MAIN MENU, 3 DIRECTIONS</div>
+    <div style="color:#6b7482;font-size:13px">Every frame is clickable: Continue / New City / Load / Settings all navigate.</div>
+  </div>
+
+  <div style="display:flex;gap:56px;align-items:flex-start;flex-wrap:wrap">
+
+    <!-- ═══════════════════ OPTION 1A — AEGEAN MARBLE ═══════════════════ -->
+    <div id="1a" style="display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;align-items:center;gap:10px;font-family:Barlow,sans-serif">
+        <a href="#1a" style="background:#a08339;color:#fff;border-radius:6px;padding:4px 10px;font-size:13px;font-weight:700;text-decoration:none">1a</a>
+        <div style="color:#b8c0cc;font-size:13px;font-weight:600;letter-spacing:.08em">AEGEAN MARBLE — classical light</div>
+      </div>
+      <div style="position:relative;width:1280px;height:800px;overflow:hidden;border-radius:14px;background:#d3ddcc;box-shadow:0 24px 80px rgba(0,0,0,.5)">
+        <x-import component-from-global-scope="iso-city" from="./iso-city.js" theme="day" seed="11" vehicles="{{ trafficAttr }}" density="{{ densityAttr }}" style="position:absolute;inset:0" hint-size="1280px,800px"></x-import>
+
+        <sc-if value="{{ aIsMenu }}" hint-placeholder-val="{{ true }}">
+          <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:radial-gradient(ellipse at 50% 42%, rgba(246,242,231,.95) 0%, rgba(246,242,231,.8) 46%, rgba(240,234,218,.4) 76%, rgba(240,234,218,.12) 100%);animation:polisFade .4s ease both">
+            <div style="font-family:Lora,serif;font-size:13px;letter-spacing:.5em;color:#8a7a4d;margin-bottom:10px">THE GAME OF</div>
+            <div style="display:flex;align-items:center;gap:20px">
+              <div style="width:90px;height:1px;background:#a08339"></div>
+              <div style="width:7px;height:7px;background:#a08339;transform:rotate(45deg) scaleY(.6)"></div>
+              <div style="font-family:Marcellus,serif;font-size:104px;line-height:1;letter-spacing:.12em;color:#232a35;text-indent:.12em">POLIS</div>
+              <div style="width:7px;height:7px;background:#a08339;transform:rotate(45deg) scaleY(.6)"></div>
+              <div style="width:90px;height:1px;background:#a08339"></div>
+            </div>
+            <div style="font-family:Lora,serif;font-style:italic;font-size:16px;color:#6d6449;margin-top:14px">an isometric city builder</div>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:2px;margin-top:44px">
+              <div onClick="{{ aGoGame }}" style="font-family:Lora,serif;font-size:14px;letter-spacing:.22em;color:#4a4331;padding:11px 0;width:280px;text-align:center;cursor:pointer;border-top:1px solid transparent;border-bottom:1px solid transparent" style-hover="color:#1d2531;border-top:1px solid #b9a878;border-bottom:1px solid #b9a878;background:rgba(255,255,255,.5)">CONTINUE</div>
+              <div onClick="{{ aGoNew }}" style="font-family:Lora,serif;font-size:14px;letter-spacing:.22em;color:#4a4331;padding:11px 0;width:280px;text-align:center;cursor:pointer;border-top:1px solid transparent;border-bottom:1px solid transparent" style-hover="color:#1d2531;border-top:1px solid #b9a878;border-bottom:1px solid #b9a878;background:rgba(255,255,255,.5)">NEW CITY</div>
+              <div onClick="{{ aGoLoad }}" style="font-family:Lora,serif;font-size:14px;letter-spacing:.22em;color:#4a4331;padding:11px 0;width:280px;text-align:center;cursor:pointer;border-top:1px solid transparent;border-bottom:1px solid transparent" style-hover="color:#1d2531;border-top:1px solid #b9a878;border-bottom:1px solid #b9a878;background:rgba(255,255,255,.5)">LOAD CITY</div>
+              <div onClick="{{ aGoSettings }}" style="font-family:Lora,serif;font-size:14px;letter-spacing:.22em;color:#4a4331;padding:11px 0;width:280px;text-align:center;cursor:pointer;border-top:1px solid transparent;border-bottom:1px solid transparent" style-hover="color:#1d2531;border-top:1px solid #b9a878;border-bottom:1px solid #b9a878;background:rgba(255,255,255,.5)">SETTINGS</div>
+              <div style="font-family:Lora,serif;font-size:14px;letter-spacing:.22em;color:#4a4331;opacity:.4;padding:11px 0;width:280px;text-align:center;cursor:default">EXIT</div>
+            </div>
+            <div style="position:absolute;bottom:22px;font-family:Lora,serif;font-size:10px;letter-spacing:.24em;color:#97896b">PRE-ALPHA 0.1 · DETERMINISTIC SIMULATION CORE · 10 TICKS / S</div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ aIsNew }}" hint-placeholder-val="{{ false }}">
+          <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(38,34,24,.45);animation:polisFade .3s ease both">
+            <div style="width:560px;background:rgba(247,243,233,.96);border:1px solid #cbbf9f;border-radius:4px;box-shadow:0 20px 50px rgba(30,25,10,.3);padding:36px 42px">
+              <div style="font-family:Marcellus,serif;font-size:30px;color:#232a35;letter-spacing:.04em">Found a New City</div>
+              <div style="width:56px;height:2px;background:#a08339;margin-top:10px"></div>
+              <div style="font-family:Lora,serif;font-size:11px;letter-spacing:.18em;color:#8a7a4d;margin:24px 0 8px">CITY NAME</div>
+              <input defaultValue="Nova Polis" style="width:100%;box-sizing:border-box;padding:12px 14px;background:#fffdf6;border:1px solid #c9bd9e;color:#2b3140;font-family:Lora,serif;font-size:16px;outline:none;border-radius:2px" />
+              <div style="font-family:Lora,serif;font-size:11px;letter-spacing:.18em;color:#8a7a4d;margin:20px 0 8px">MAP SIZE</div>
+              <div style="display:flex;gap:8px">
+                <sc-for list="{{ aSizes }}" as="s" hint-placeholder-count="3">
+                  <div style="{{ s.style }}" onClick="{{ s.pick }}">
+                    <div style="font-weight:600;font-size:14px">{{ s.label }}</div>
+                    <div style="opacity:.72;font-size:11px;letter-spacing:.12em;margin-top:3px">{{ s.name }}</div>
+                  </div>
+                </sc-for>
+              </div>
+              <div style="font-family:Lora,serif;font-size:11px;letter-spacing:.18em;color:#8a7a4d;margin:20px 0 8px">WORLD SEED</div>
+              <div style="display:flex;gap:8px">
+                <input value="{{ aSeed }}" onChange="{{ aSeedChange }}" style="flex:1;box-sizing:border-box;padding:12px 14px;background:#fffdf6;border:1px solid #c9bd9e;color:#2b3140;font-family:Lora,serif;font-size:16px;outline:none;border-radius:2px" />
+                <div onClick="{{ aRoll }}" style="display:flex;align-items:center;padding:0 18px;border:1px solid #a5966d;color:#6b6046;font-family:Lora,serif;font-size:12px;letter-spacing:.16em;cursor:pointer;border-radius:2px" style-hover="background:rgba(160,131,57,.12);color:#4a4030">RANDOMIZE</div>
+              </div>
+              <div style="font-family:Lora,serif;font-size:11px;letter-spacing:.18em;color:#8a7a4d;margin:20px 0 8px">TERRAIN</div>
+              <select defaultValue="Verdant Plains" style="width:100%;box-sizing:border-box;padding:12px 14px;background:#fffdf6;border:1px solid #c9bd9e;color:#2b3140;font-family:Lora,serif;font-size:15px;outline:none;border-radius:2px">
+                <option>Verdant Plains</option>
+                <option>River Delta</option>
+                <option>Coastal Reach</option>
+                <option>Highlands</option>
+              </select>
+              <div style="display:flex;justify-content:space-between;margin-top:30px">
+                <div onClick="{{ aGoMenu }}" style="padding:12px 24px;border:1px solid #a5966d;color:#6b6046;font-family:Lora,serif;font-size:12px;letter-spacing:.18em;cursor:pointer;border-radius:2px" style-hover="background:rgba(160,131,57,.12);color:#4a4030">BACK</div>
+                <div onClick="{{ aGoGame }}" style="padding:12px 28px;background:#24506e;color:#f2eee1;font-family:Lora,serif;font-size:12px;letter-spacing:.18em;cursor:pointer;border-radius:2px" style-hover="background:#1b3e57">FOUND CITY</div>
+              </div>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ aIsLoad }}" hint-placeholder-val="{{ false }}">
+          <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(38,34,24,.45);animation:polisFade .3s ease both">
+            <div style="width:640px;background:rgba(247,243,233,.96);border:1px solid #cbbf9f;border-radius:4px;box-shadow:0 20px 50px rgba(30,25,10,.3);padding:36px 42px">
+              <div style="font-family:Marcellus,serif;font-size:30px;color:#232a35;letter-spacing:.04em">Load City</div>
+              <div style="width:56px;height:2px;background:#a08339;margin-top:10px;margin-bottom:20px"></div>
+              <div style="display:flex;align-items:center;gap:16px;padding:16px 10px;border-bottom:1px solid #ddd3b8;cursor:pointer" style-hover="background:rgba(255,255,255,.55)">
+                <div style="position:relative;width:56px;height:40px;flex:none">
+                  <div style="position:absolute;left:16px;top:4px;width:22px;height:22px;background:#40b460;transform:rotate(45deg) scaleY(.55)"></div>
+                  <div style="position:absolute;left:4px;top:12px;width:22px;height:22px;background:#4880dc;transform:rotate(45deg) scaleY(.55)"></div>
+                  <div style="position:absolute;left:28px;top:14px;width:22px;height:22px;background:#dcc448;transform:rotate(45deg) scaleY(.55)"></div>
+                </div>
+                <div style="flex:1">
+                  <div style="font-family:Marcellus,serif;font-size:19px;color:#232a35">Nova Polis</div>
+                  <div style="font-family:Lora,serif;font-size:13px;color:#6b6250;margin-top:2px">Population 12,480 · § 45,120 · Year 4 — Spring</div>
+                </div>
+                <div style="font-family:Lora,serif;font-size:12px;color:#97896b">2 h ago</div>
+                <div onClick="{{ aGoGame }}" style="padding:8px 18px;border:1px solid #24506e;color:#24506e;font-family:Lora,serif;font-size:11px;letter-spacing:.16em;cursor:pointer;border-radius:2px" style-hover="background:#24506e;color:#f2eee1">LOAD</div>
+              </div>
+              <div style="display:flex;align-items:center;gap:16px;padding:16px 10px;border-bottom:1px solid #ddd3b8;cursor:pointer" style-hover="background:rgba(255,255,255,.55)">
+                <div style="position:relative;width:56px;height:40px;flex:none">
+                  <div style="position:absolute;left:16px;top:4px;width:22px;height:22px;background:#60a858;transform:rotate(45deg) scaleY(.55)"></div>
+                  <div style="position:absolute;left:4px;top:12px;width:22px;height:22px;background:#40b460;transform:rotate(45deg) scaleY(.55)"></div>
+                  <div style="position:absolute;left:28px;top:14px;width:22px;height:22px;background:#3060c8;transform:rotate(45deg) scaleY(.55)"></div>
+                </div>
+                <div style="flex:1">
+                  <div style="font-family:Marcellus,serif;font-size:19px;color:#232a35">Porto Verde</div>
+                  <div style="font-family:Lora,serif;font-size:13px;color:#6b6250;margin-top:2px">Population 3,215 · § 12,900 · Year 1 — Autumn</div>
+                </div>
+                <div style="font-family:Lora,serif;font-size:12px;color:#97896b">yesterday</div>
+                <div onClick="{{ aGoGame }}" style="padding:8px 18px;border:1px solid #24506e;color:#24506e;font-family:Lora,serif;font-size:11px;letter-spacing:.16em;cursor:pointer;border-radius:2px" style-hover="background:#24506e;color:#f2eee1">LOAD</div>
+              </div>
+              <div style="display:flex;align-items:center;gap:16px;padding:16px 10px;border-bottom:1px solid #ddd3b8;cursor:pointer" style-hover="background:rgba(255,255,255,.55)">
+                <div style="position:relative;width:56px;height:40px;flex:none">
+                  <div style="position:absolute;left:16px;top:4px;width:22px;height:22px;background:#dcc448;transform:rotate(45deg) scaleY(.55)"></div>
+                  <div style="position:absolute;left:4px;top:12px;width:22px;height:22px;background:#b45ac8;transform:rotate(45deg) scaleY(.55)"></div>
+                  <div style="position:absolute;left:28px;top:14px;width:22px;height:22px;background:#3c3c42;transform:rotate(45deg) scaleY(.55)"></div>
+                </div>
+                <div style="flex:1">
+                  <div style="font-family:Marcellus,serif;font-size:19px;color:#232a35">Ferrum Vale</div>
+                  <div style="font-family:Lora,serif;font-size:13px;color:#6b6250;margin-top:2px">Population 28,904 · § 8,340 · Year 9 — Winter</div>
+                </div>
+                <div style="font-family:Lora,serif;font-size:12px;color:#97896b">last week</div>
+                <div onClick="{{ aGoGame }}" style="padding:8px 18px;border:1px solid #24506e;color:#24506e;font-family:Lora,serif;font-size:11px;letter-spacing:.16em;cursor:pointer;border-radius:2px" style-hover="background:#24506e;color:#f2eee1">LOAD</div>
+              </div>
+              <div style="margin-top:26px">
+                <div onClick="{{ aGoMenu }}" style="display:inline-block;padding:12px 24px;border:1px solid #a5966d;color:#6b6046;font-family:Lora,serif;font-size:12px;letter-spacing:.18em;cursor:pointer;border-radius:2px" style-hover="background:rgba(160,131,57,.12);color:#4a4030">BACK</div>
+              </div>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ aIsSettings }}" hint-placeholder-val="{{ false }}">
+          <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(38,34,24,.45);animation:polisFade .3s ease both">
+            <div style="width:620px;background:rgba(247,243,233,.96);border:1px solid #cbbf9f;border-radius:4px;box-shadow:0 20px 50px rgba(30,25,10,.3);padding:36px 42px">
+              <div style="font-family:Marcellus,serif;font-size:30px;color:#232a35;letter-spacing:.04em">Settings</div>
+              <div style="width:56px;height:2px;background:#a08339;margin-top:10px"></div>
+              <div style="font-family:Marcellus,serif;font-size:17px;color:#232a35;border-bottom:1px solid #cbbf9f;padding-bottom:6px;margin:24px 0 4px">Audio</div>
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0">
+                <div style="font-family:Lora,serif;font-size:14px;color:#4a4331">Master volume</div>
+                <input type="range" defaultValue="80" style="width:200px;accent-color:#24506e;cursor:pointer" />
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0">
+                <div style="font-family:Lora,serif;font-size:14px;color:#4a4331">Music</div>
+                <input type="range" defaultValue="60" style="width:200px;accent-color:#24506e;cursor:pointer" />
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0">
+                <div style="font-family:Lora,serif;font-size:14px;color:#4a4331">Ambience &amp; traffic</div>
+                <input type="range" defaultValue="70" style="width:200px;accent-color:#24506e;cursor:pointer" />
+              </div>
+              <div style="font-family:Marcellus,serif;font-size:17px;color:#232a35;border-bottom:1px solid #cbbf9f;padding-bottom:6px;margin:20px 0 4px">Graphics</div>
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0">
+                <div style="font-family:Lora,serif;font-size:14px;color:#4a4331">UI scale</div>
+                <input type="range" min="75" max="150" defaultValue="100" style="width:200px;accent-color:#24506e;cursor:pointer" />
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0">
+                <div style="font-family:Lora,serif;font-size:14px;color:#4a4331">V-Sync</div>
+                <input type="checkbox" defaultChecked="{{ true }}" style="width:18px;height:18px;accent-color:#24506e;cursor:pointer" />
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0">
+                <div style="font-family:Lora,serif;font-size:14px;color:#4a4331">Building animations</div>
+                <input type="checkbox" defaultChecked="{{ true }}" style="width:18px;height:18px;accent-color:#24506e;cursor:pointer" />
+              </div>
+              <div style="font-family:Marcellus,serif;font-size:17px;color:#232a35;border-bottom:1px solid #cbbf9f;padding-bottom:6px;margin:20px 0 4px">Gameplay</div>
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0">
+                <div style="font-family:Lora,serif;font-size:14px;color:#4a4331">Autosave</div>
+                <select defaultValue="Every 10 min" style="width:200px;padding:9px 12px;background:#fffdf6;border:1px solid #c9bd9e;color:#2b3140;font-family:Lora,serif;font-size:13px;outline:none;border-radius:2px">
+                  <option>Off</option>
+                  <option>Every 5 min</option>
+                  <option>Every 10 min</option>
+                  <option>Every 30 min</option>
+                </select>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0">
+                <div style="font-family:Lora,serif;font-size:14px;color:#4a4331">Edge scrolling</div>
+                <input type="checkbox" defaultChecked="{{ true }}" style="width:18px;height:18px;accent-color:#24506e;cursor:pointer" />
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0">
+                <div style="font-family:Lora,serif;font-size:14px;color:#4a4331">Tutorial tips</div>
+                <input type="checkbox" defaultChecked="{{ true }}" style="width:18px;height:18px;accent-color:#24506e;cursor:pointer" />
+              </div>
+              <div style="display:flex;justify-content:space-between;margin-top:28px">
+                <div onClick="{{ aGoMenu }}" style="padding:12px 24px;border:1px solid #a5966d;color:#6b6046;font-family:Lora,serif;font-size:12px;letter-spacing:.18em;cursor:pointer;border-radius:2px" style-hover="background:rgba(160,131,57,.12);color:#4a4030">BACK</div>
+                <div onClick="{{ aGoMenu }}" style="padding:12px 28px;background:#24506e;color:#f2eee1;font-family:Lora,serif;font-size:12px;letter-spacing:.18em;cursor:pointer;border-radius:2px" style-hover="background:#1b3e57">APPLY</div>
+              </div>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ aIsGame }}" hint-placeholder-val="{{ false }}">
+          <div style="position:absolute;inset:0;animation:polisFade .3s ease both">
+            <div style="position:absolute;left:50%;bottom:34px;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:12px;background:rgba(247,243,233,.95);border:1px solid #cbbf9f;border-radius:4px;box-shadow:0 16px 40px rgba(30,25,10,.35);padding:20px 30px">
+              <div style="font-family:Lora,serif;font-size:14px;color:#4a4331">Simulation running — the in-game HUD arrives in phase 2.</div>
+              <div style="font-family:Lora,serif;font-size:12px;letter-spacing:.14em;color:#8a7a4d">§ 50,000 · POPULATION 0 · 10 TICKS / S</div>
+              <div onClick="{{ aGoMenu }}" style="padding:10px 22px;border:1px solid #a5966d;color:#6b6046;font-family:Lora,serif;font-size:11px;letter-spacing:.18em;cursor:pointer;border-radius:2px" style-hover="background:rgba(160,131,57,.12);color:#4a4030">BACK TO MENU</div>
+            </div>
+          </div>
+        </sc-if>
+      </div>
+    </div>
+
+    <!-- ═══════════════════ OPTION 1B — NIGHT GRID ═══════════════════ -->
+    <div id="1b" style="display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;align-items:center;gap:10px;font-family:Barlow,sans-serif">
+        <a href="#1b" style="background:#2f7de2;color:#fff;border-radius:6px;padding:4px 10px;font-size:13px;font-weight:700;text-decoration:none">1b</a>
+        <div style="color:#b8c0cc;font-size:13px;font-weight:600;letter-spacing:.08em">NIGHT GRID — modern dark flat</div>
+      </div>
+      <div style="position:relative;width:1280px;height:800px;overflow:hidden;border-radius:14px;background:#0a0e15;box-shadow:0 24px 80px rgba(0,0,0,.5)">
+        <x-import component-from-global-scope="iso-city" from="./iso-city.js" theme="night" seed="23" vehicles="{{ trafficAttr }}" density="{{ densityAttr }}" style="position:absolute;inset:0" hint-size="1280px,800px"></x-import>
+
+        <sc-if value="{{ bIsMenu }}" hint-placeholder-val="{{ true }}">
+          <div style="position:absolute;inset:0;background:linear-gradient(90deg, rgba(7,11,17,.95) 0%, rgba(7,11,17,.84) 32%, rgba(7,11,17,.35) 62%, rgba(7,11,17,.05) 100%);animation:polisFade .4s ease both">
+            <div style="position:absolute;inset:0;display:flex;flex-direction:column;padding:64px 80px;box-sizing:border-box">
+              <div style="font-family:Barlow,sans-serif;font-weight:600;font-size:13px;letter-spacing:.45em;color:#6f87a4">THE GAME OF</div>
+              <div style="font-family:'Barlow Semi Condensed',sans-serif;font-weight:700;font-size:124px;line-height:.95;color:#f2f7fd;margin-top:4px">POLIS</div>
+              <div style="width:64px;height:4px;background:#63a8ff;margin-top:18px"></div>
+              <div style="display:flex;flex-direction:column;gap:4px;margin-top:46px;width:340px">
+                <div onClick="{{ bGoGame }}" style="padding:12px 18px;border-left:3px solid transparent;cursor:pointer" style-hover="background:rgba(99,168,255,.1);border-left:3px solid #63a8ff">
+                  <div style="font-family:'Barlow Semi Condensed',sans-serif;font-weight:600;font-size:23px;letter-spacing:.06em;color:#e8f0f9">CONTINUE</div>
+                  <div style="font-family:Barlow,sans-serif;font-size:12px;color:#7f93ab;margin-top:1px">Nova Polis · Year 4 — Spring</div>
+                </div>
+                <div onClick="{{ bGoNew }}" style="padding:12px 18px;border-left:3px solid transparent;cursor:pointer" style-hover="background:rgba(99,168,255,.1);border-left:3px solid #63a8ff">
+                  <div style="font-family:'Barlow Semi Condensed',sans-serif;font-weight:600;font-size:23px;letter-spacing:.06em;color:#c7d4e4">NEW CITY</div>
+                </div>
+                <div onClick="{{ bGoLoad }}" style="padding:12px 18px;border-left:3px solid transparent;cursor:pointer" style-hover="background:rgba(99,168,255,.1);border-left:3px solid #63a8ff">
+                  <div style="font-family:'Barlow Semi Condensed',sans-serif;font-weight:600;font-size:23px;letter-spacing:.06em;color:#c7d4e4">LOAD CITY</div>
+                </div>
+                <div onClick="{{ bGoSettings }}" style="padding:12px 18px;border-left:3px solid transparent;cursor:pointer" style-hover="background:rgba(99,168,255,.1);border-left:3px solid #63a8ff">
+                  <div style="font-family:'Barlow Semi Condensed',sans-serif;font-weight:600;font-size:23px;letter-spacing:.06em;color:#c7d4e4">SETTINGS</div>
+                </div>
+                <div style="padding:12px 18px;border-left:3px solid transparent;opacity:.4">
+                  <div style="font-family:'Barlow Semi Condensed',sans-serif;font-weight:600;font-size:23px;letter-spacing:.06em;color:#c7d4e4">EXIT</div>
+                </div>
+              </div>
+              <div style="margin-top:auto;display:flex;justify-content:space-between;align-items:center">
+                <div style="font-family:Barlow,sans-serif;font-weight:600;font-size:11px;letter-spacing:.18em;color:#5c7089;border:1px solid #26344a;border-radius:6px;padding:6px 12px">PRE-ALPHA 0.1.0</div>
+                <div style="font-family:Barlow,sans-serif;font-size:12px;letter-spacing:.1em;color:#5c7089">↑ ↓ NAVIGATE&nbsp;&nbsp;·&nbsp;&nbsp;ENTER SELECT&nbsp;&nbsp;·&nbsp;&nbsp;ESC BACK</div>
+              </div>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ bIsNew }}" hint-placeholder-val="{{ false }}">
+          <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(7,11,17,.74);animation:polisFade .3s ease both">
+            <div style="width:560px;background:rgba(15,21,30,.96);border:1px solid #263447;border-radius:12px;box-shadow:0 30px 80px rgba(0,0,0,.55);padding:34px 40px">
+              <div style="font-family:'Barlow Semi Condensed',sans-serif;font-weight:700;font-size:30px;letter-spacing:.04em;color:#f2f7fd">NEW CITY</div>
+              <div style="width:44px;height:3px;background:#63a8ff;margin-top:8px"></div>
+              <div style="font-family:Barlow,sans-serif;font-weight:600;font-size:11px;letter-spacing:.2em;color:#7f93ab;margin:24px 0 8px">CITY NAME</div>
+              <input defaultValue="Nova Polis" style="width:100%;box-sizing:border-box;padding:12px 14px;background:#0b1119;border:1px solid #2a3a4e;border-radius:8px;color:#e8f0f9;font-family:Barlow,sans-serif;font-size:15px;outline:none" />
+              <div style="font-family:Barlow,sans-serif;font-weight:600;font-size:11px;letter-spacing:.2em;color:#7f93ab;margin:20px 0 8px">MAP SIZE</div>
+              <div style="display:flex;gap:8px">
+                <sc-for list="{{ bSizes }}" as="s" hint-placeholder-count="3">
+                  <div style="{{ s.style }}" onClick="{{ s.pick }}">
+                    <div style="font-weight:600;font-size:14px">{{ s.label }}</div>
+                    <div style="opacity:.72;font-size:11px;letter-spacing:.12em;margin-top:3px">{{ s.name }}</div>
+                  </div>
+                </sc-for>
+              </div>
+              <div style="font-family:Barlow,sans-serif;font-weight:600;font-size:11px;letter-spacing:.2em;color:#7f93ab;margin:20px 0 8px">WORLD SEED</div>
+              <div style="display:flex;gap:8px">
+                <input value="{{ bSeed }}" onChange="{{ bSeedChange }}" style="flex:1;box-sizing:border-box;padding:12px 14px;background:#0b1119;border:1px solid #2a3a4e;border-radius:8px;color:#e8f0f9;font-family:Barlow,sans-serif;font-size:15px;outline:none" />
+                <div onClick="{{ bRoll }}" style="display:flex;align-items:center;padding:0 18px;border:1px solid #33465e;border-radius:8px;color:#a9bacd;font-family:Barlow,sans-serif;font-weight:600;font-size:12px;letter-spacing:.1em;cursor:pointer" style-hover="border-color:#63a8ff;color:#e8f0f9">RANDOMIZE</div>
+              </div>
+              <div style="font-family:Barlow,sans-serif;font-weight:600;font-size:11px;letter-spacing:.2em;color:#7f93ab;margin:20px 0 8px">TERRAIN</div>
+              <select defaultValue="Verdant Plains" style="width:100%;box-sizing:border-box;padding:12px 14px;background:#0b1119;border:1px solid #2a3a4e;border-radius:8px;color:#e8f0f9;font-family:Barlow,sans-serif;font-size:14px;outline:none">
+                <option>Verdant Plains</option>
+                <option>River Delta</option>
+                <option>Coastal Reach</option>
+                <option>Highlands</option>
+              </select>
+              <div style="display:flex;justify-content:space-between;margin-top:30px">
+                <div onClick="{{ bGoMenu }}" style="padding:12px 24px;border:1px solid #33465e;border-radius:8px;color:#a9bacd;font-family:Barlow,sans-serif;font-weight:600;font-size:13px;letter-spacing:.08em;cursor:pointer" style-hover="border-color:#63a8ff;color:#e8f0f9">BACK</div>
+                <div onClick="{{ bGoGame }}" style="padding:12px 28px;background:#2f7de2;border-radius:8px;color:#fff;font-family:Barlow,sans-serif;font-weight:600;font-size:13px;letter-spacing:.08em;cursor:pointer" style-hover="background:#4a90ee">FOUND CITY</div>
+              </div>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ bIsLoad }}" hint-placeholder-val="{{ false }}">
+          <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(7,11,17,.74);animation:polisFade .3s ease both">
+            <div style="width:640px;background:rgba(15,21,30,.96);border:1px solid #263447;border-radius:12px;box-shadow:0 30px 80px rgba(0,0,0,.55);padding:34px 40px">
+              <div style="font-family:'Barlow Semi Condensed',sans-serif;font-weight:700;font-size:30px;letter-spacing:.04em;color:#f2f7fd">LOAD CITY</div>
+              <div style="width:44px;height:3px;background:#63a8ff;margin-top:8px;margin-bottom:22px"></div>
+              <div style="display:flex;flex-direction:column;gap:10px">
+                <div style="display:flex;align-items:center;gap:16px;padding:14px 16px;background:#0b1119;border:1px solid #223146;border-radius:10px;cursor:pointer" style-hover="border-color:#63a8ff">
+                  <div style="position:relative;width:56px;height:40px;flex:none">
+                    <div style="position:absolute;left:16px;top:4px;width:22px;height:22px;background:#40b460;transform:rotate(45deg) scaleY(.55)"></div>
+                    <div style="position:absolute;left:4px;top:12px;width:22px;height:22px;background:#4880dc;transform:rotate(45deg) scaleY(.55)"></div>
+                    <div style="position:absolute;left:28px;top:14px;width:22px;height:22px;background:#dcc448;transform:rotate(45deg) scaleY(.55)"></div>
+                  </div>
+                  <div style="flex:1">
+                    <div style="font-family:'Barlow Semi Condensed',sans-serif;font-weight:600;font-size:19px;color:#e8f0f9">NOVA POLIS</div>
+                    <div style="font-family:Barlow,sans-serif;font-size:12px;color:#7f93ab;margin-top:2px">Population 12,480 · § 45,120 · Year 4 — Spring</div>
+                  </div>
+                  <div style="font-family:Barlow,sans-serif;font-size:12px;color:#5c7089">2 h ago</div>
+                  <div onClick="{{ bGoGame }}" style="padding:8px 18px;background:#2f7de2;border-radius:8px;color:#fff;font-family:Barlow,sans-serif;font-weight:600;font-size:12px;letter-spacing:.08em;cursor:pointer" style-hover="background:#4a90ee">LOAD</div>
+                </div>
+                <div style="display:flex;align-items:center;gap:16px;padding:14px 16px;background:#0b1119;border:1px solid #223146;border-radius:10px;cursor:pointer" style-hover="border-color:#63a8ff">
+                  <div style="position:relative;width:56px;height:40px;flex:none">
+                    <div style="position:absolute;left:16px;top:4px;width:22px;height:22px;background:#60a858;transform:rotate(45deg) scaleY(.55)"></div>
+                    <div style="position:absolute;left:4px;top:12px;width:22px;height:22px;background:#40b460;transform:rotate(45deg) scaleY(.55)"></div>
+                    <div style="position:absolute;left:28px;top:14px;width:22px;height:22px;background:#3060c8;transform:rotate(45deg) scaleY(.55)"></div>
+                  </div>
+                  <div style="flex:1">
+                    <div style="font-family:'Barlow Semi Condensed',sans-serif;font-weight:600;font-size:19px;color:#e8f0f9">PORTO VERDE</div>
+                    <div style="font-family:Barlow,sans-serif;font-size:12px;color:#7f93ab;margin-top:2px">Population 3,215 · § 12,900 · Year 1 — Autumn</div>
+                  </div>
+                  <div style="font-family:Barlow,sans-serif;font-size:12px;color:#5c7089">yesterday</div>
+                  <div onClick="{{ bGoGame }}" style="padding:8px 18px;background:#2f7de2;border-radius:8px;color:#fff;font-family:Barlow,sans-serif;font-weight:600;font-size:12px;letter-spacing:.08em;cursor:pointer" style-hover="background:#4a90ee">LOAD</div>
+                </div>
+                <div style="display:flex;align-items:center;gap:16px;padding:14px 16px;background:#0b1119;border:1px solid #223146;border-radius:10px;cursor:pointer" style-hover="border-color:#63a8ff">
+                  <div style="position:relative;width:56px;height:40px;flex:none">
+                    <div style="position:absolute;left:16px;top:4px;width:22px;height:22px;background:#dcc448;transform:rotate(45deg) scaleY(.55)"></div>
+                    <div style="position:absolute;left:4px;top:12px;width:22px;height:22px;background:#b45ac8;transform:rotate(45deg) scaleY(.55)"></div>
+                    <div style="position:absolute;left:28px;top:14px;width:22px;height:22px;background:#3c3c42;transform:rotate(45deg) scaleY(.55)"></div>
+                  </div>
+                  <div style="flex:1">
+                    <div style="font-family:'Barlow Semi Condensed',sans-serif;font-weight:600;font-size:19px;color:#e8f0f9">FERRUM VALE</div>
+                    <div style="font-family:Barlow,sans-serif;font-size:12px;color:#7f93ab;margin-top:2px">Population 28,904 · § 8,340 · Year 9 — Winter</div>
+                  </div>
+                  <div style="font-family:Barlow,sans-serif;font-size:12px;color:#5c7089">last week</div>
+                  <div onClick="{{ bGoGame }}" style="padding:8px 18px;background:#2f7de2;border-radius:8px;color:#fff;font-family:Barlow,sans-serif;font-weight:600;font-size:12px;letter-spacing:.08em;cursor:pointer" style-hover="background:#4a90ee">LOAD</div>
+                </div>
+              </div>
+              <div style="margin-top:26px">
+                <div onClick="{{ bGoMenu }}" style="display:inline-block;padding:12px 24px;border:1px solid #33465e;border-radius:8px;color:#a9bacd;font-family:Barlow,sans-serif;font-weight:600;font-size:13px;letter-spacing:.08em;cursor:pointer" style-hover="border-color:#63a8ff;color:#e8f0f9">BACK</div>
+              </div>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ bIsSettings }}" hint-placeholder-val="{{ false }}">
+          <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(7,11,17,.74);animation:polisFade .3s ease both">
+            <div style="width:600px;background:rgba(15,21,30,.96);border:1px solid #263447;border-radius:12px;box-shadow:0 30px 80px rgba(0,0,0,.55);padding:34px 40px">
+              <div style="font-family:'Barlow Semi Condensed',sans-serif;font-weight:700;font-size:30px;letter-spacing:.04em;color:#f2f7fd">SETTINGS</div>
+              <div style="width:44px;height:3px;background:#63a8ff;margin-top:8px"></div>
+              <div style="font-family:'Barlow Semi Condensed',sans-serif;font-weight:600;font-size:15px;letter-spacing:.14em;color:#7f93ab;border-bottom:1px solid #223146;padding-bottom:6px;margin:24px 0 4px">AUDIO</div>
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0">
+                <div style="font-family:Barlow,sans-serif;font-size:14px;color:#c7d4e4">Master volume</div>
+                <input type="range" defaultValue="80" style="width:200px;accent-color:#63a8ff;cursor:pointer" />
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0">
+                <div style="font-family:Barlow,sans-serif;font-size:14px;color:#c7d4e4">Music</div>
+                <input type="range" defaultValue="60" style="width:200px;accent-color:#63a8ff;cursor:pointer" />
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0">
+                <div style="font-family:Barlow,sans-serif;font-size:14px;color:#c7d4e4">Ambience &amp; traffic</div>
+                <input type="range" defaultValue="70" style="width:200px;accent-color:#63a8ff;cursor:pointer" />
+              </div>
+              <div style="font-family:'Barlow Semi Condensed',sans-serif;font-weight:600;font-size:15px;letter-spacing:.14em;color:#7f93ab;border-bottom:1px solid #223146;padding-bottom:6px;margin:20px 0 4px">GRAPHICS</div>
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0">
+                <div style="font-family:Barlow,sans-serif;font-size:14px;color:#c7d4e4">UI scale</div>
+                <input type="range" min="75" max="150" defaultValue="100" style="width:200px;accent-color:#63a8ff;cursor:pointer" />
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0">
+                <div style="font-family:Barlow,sans-serif;font-size:14px;color:#c7d4e4">V-Sync</div>
+                <input type="checkbox" defaultChecked="{{ true }}" style="width:18px;height:18px;accent-color:#63a8ff;cursor:pointer" />
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0">
+                <div style="font-family:Barlow,sans-serif;font-size:14px;color:#c7d4e4">Building animations</div>
+                <input type="checkbox" defaultChecked="{{ true }}" style="width:18px;height:18px;accent-color:#63a8ff;cursor:pointer" />
+              </div>
+              <div style="font-family:'Barlow Semi Condensed',sans-serif;font-weight:600;font-size:15px;letter-spacing:.14em;color:#7f93ab;border-bottom:1px solid #223146;padding-bottom:6px;margin:20px 0 4px">GAMEPLAY</div>
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0">
+                <div style="font-family:Barlow,sans-serif;font-size:14px;color:#c7d4e4">Autosave</div>
+                <select defaultValue="Every 10 min" style="width:200px;padding:9px 12px;background:#0b1119;border:1px solid #2a3a4e;border-radius:8px;color:#e8f0f9;font-family:Barlow,sans-serif;font-size:13px;outline:none">
+                  <option>Off</option>
+                  <option>Every 5 min</option>
+                  <option>Every 10 min</option>
+                  <option>Every 30 min</option>
+                </select>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0">
+                <div style="font-family:Barlow,sans-serif;font-size:14px;color:#c7d4e4">Edge scrolling</div>
+                <input type="checkbox" defaultChecked="{{ true }}" style="width:18px;height:18px;accent-color:#63a8ff;cursor:pointer" />
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0">
+                <div style="font-family:Barlow,sans-serif;font-size:14px;color:#c7d4e4">Tutorial tips</div>
+                <input type="checkbox" defaultChecked="{{ true }}" style="width:18px;height:18px;accent-color:#63a8ff;cursor:pointer" />
+              </div>
+              <div style="display:flex;justify-content:space-between;margin-top:28px">
+                <div onClick="{{ bGoMenu }}" style="padding:12px 24px;border:1px solid #33465e;border-radius:8px;color:#a9bacd;font-family:Barlow,sans-serif;font-weight:600;font-size:13px;letter-spacing:.08em;cursor:pointer" style-hover="border-color:#63a8ff;color:#e8f0f9">BACK</div>
+                <div onClick="{{ bGoMenu }}" style="padding:12px 28px;background:#2f7de2;border-radius:8px;color:#fff;font-family:Barlow,sans-serif;font-weight:600;font-size:13px;letter-spacing:.08em;cursor:pointer" style-hover="background:#4a90ee">APPLY</div>
+              </div>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ bIsGame }}" hint-placeholder-val="{{ false }}">
+          <div style="position:absolute;inset:0;animation:polisFade .3s ease both">
+            <div style="position:absolute;left:50%;bottom:34px;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:12px;background:rgba(15,21,30,.95);border:1px solid #263447;border-radius:12px;box-shadow:0 16px 40px rgba(0,0,0,.5);padding:20px 30px">
+              <div style="font-family:Barlow,sans-serif;font-size:14px;color:#c7d4e4">Simulation running — the in-game HUD arrives in phase 2.</div>
+              <div style="font-family:Barlow,sans-serif;font-weight:600;font-size:12px;letter-spacing:.14em;color:#63a8ff">§ 50,000 · POPULATION 0 · 10 TICKS / S</div>
+              <div onClick="{{ bGoMenu }}" style="padding:10px 22px;border:1px solid #33465e;border-radius:8px;color:#a9bacd;font-family:Barlow,sans-serif;font-weight:600;font-size:12px;letter-spacing:.08em;cursor:pointer" style-hover="border-color:#63a8ff;color:#e8f0f9">BACK TO MENU</div>
+            </div>
+          </div>
+        </sc-if>
+      </div>
+    </div>
+
+    <!-- ═══════════════════ OPTION 1C — BLUEPRINT ═══════════════════ -->
+    <div id="1c" style="display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;align-items:center;gap:10px;font-family:Barlow,sans-serif">
+        <a href="#1c" style="background:#ffd84d;color:#10233a;border-radius:6px;padding:4px 10px;font-size:13px;font-weight:700;text-decoration:none">1c</a>
+        <div style="color:#b8c0cc;font-size:13px;font-weight:600;letter-spacing:.08em">BLUEPRINT — engineering console</div>
+      </div>
+      <div style="position:relative;width:1280px;height:800px;overflow:hidden;border-radius:14px;background:#12395f;box-shadow:0 24px 80px rgba(0,0,0,.5)">
+        <x-import component-from-global-scope="iso-city" from="./iso-city.js" theme="blueprint" seed="5" vehicles="{{ trafficAttr }}" density="{{ densityAttr }}" style="position:absolute;inset:0" hint-size="1280px,800px"></x-import>
+
+        <sc-if value="{{ cIsMenu }}" hint-placeholder-val="{{ true }}">
+          <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:radial-gradient(ellipse at 50% 50%, rgba(9,28,48,.55) 0%, rgba(7,22,38,.78) 100%);animation:polisFade .4s ease both">
+            <div style="position:absolute;top:26px;left:32px;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.14em;color:#7fa8cf">CB-CORE // BUILD 0.1 // NETSTANDARD 2.1</div>
+            <div style="position:absolute;top:26px;right:32px;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.14em;color:#7fa8cf">FPS 60 · TICK 10/S</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.3em;color:#8fb4da">&gt; THE GAME OF</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:92px;line-height:1.1;letter-spacing:.08em;color:#eaf4ff;margin-top:6px">POLIS<span style="color:#ffd84d;animation:polisBlink 1.2s step-end infinite">_</span></div>
+            <div style="display:flex;flex-direction:column;gap:10px;margin-top:48px;width:340px">
+              <div onClick="{{ cGoGame }}" style="display:flex;justify-content:space-between;align-items:center;padding:13px 16px;border:1px dashed rgba(150,195,235,.45);background:rgba(6,20,36,.55);color:#cfe4fa;font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.12em;cursor:pointer" style-hover="border:1px solid #ffd84d;color:#ffd84d;background:rgba(255,216,77,.06)"><span>CONTINUE</span><span style="opacity:.5">01</span></div>
+              <div onClick="{{ cGoNew }}" style="display:flex;justify-content:space-between;align-items:center;padding:13px 16px;border:1px dashed rgba(150,195,235,.45);background:rgba(6,20,36,.55);color:#cfe4fa;font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.12em;cursor:pointer" style-hover="border:1px solid #ffd84d;color:#ffd84d;background:rgba(255,216,77,.06)"><span>NEW CITY</span><span style="opacity:.5">02</span></div>
+              <div onClick="{{ cGoLoad }}" style="display:flex;justify-content:space-between;align-items:center;padding:13px 16px;border:1px dashed rgba(150,195,235,.45);background:rgba(6,20,36,.55);color:#cfe4fa;font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.12em;cursor:pointer" style-hover="border:1px solid #ffd84d;color:#ffd84d;background:rgba(255,216,77,.06)"><span>LOAD CITY</span><span style="opacity:.5">03</span></div>
+              <div onClick="{{ cGoSettings }}" style="display:flex;justify-content:space-between;align-items:center;padding:13px 16px;border:1px dashed rgba(150,195,235,.45);background:rgba(6,20,36,.55);color:#cfe4fa;font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.12em;cursor:pointer" style-hover="border:1px solid #ffd84d;color:#ffd84d;background:rgba(255,216,77,.06)"><span>SETTINGS</span><span style="opacity:.5">04</span></div>
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:13px 16px;border:1px dashed rgba(150,195,235,.3);background:rgba(6,20,36,.4);color:#cfe4fa;opacity:.4;font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.12em"><span>EXIT</span><span style="opacity:.5">05</span></div>
+            </div>
+            <div style="position:absolute;bottom:24px;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.14em;color:#6f93b8">SEED 0x2A · GRID 64×64 · A* PATHFINDING ONLINE · PRE-ALPHA</div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ cIsNew }}" hint-placeholder-val="{{ false }}">
+          <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(6,18,32,.78);animation:polisFade .3s ease both">
+            <div style="width:580px;background:rgba(8,24,40,.94);border:1px solid rgba(150,195,235,.55);outline:1px dashed rgba(150,195,235,.3);outline-offset:5px;padding:32px 38px">
+              <div style="font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:22px;letter-spacing:.06em;color:#eaf4ff">// FOUND NEW CITY</div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.18em;color:#7fa8cf;margin:26px 0 8px">CITY_NAME</div>
+              <input defaultValue="Nova Polis" style="width:100%;box-sizing:border-box;padding:12px 14px;background:rgba(4,14,26,.85);border:1px solid rgba(150,195,235,.45);color:#d9ecff;font-family:'IBM Plex Mono',monospace;font-size:15px;outline:none;border-radius:0" />
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.18em;color:#7fa8cf;margin:20px 0 8px">MAP_SIZE</div>
+              <div style="display:flex;gap:8px">
+                <sc-for list="{{ cSizes }}" as="s" hint-placeholder-count="3">
+                  <div style="{{ s.style }}" onClick="{{ s.pick }}">
+                    <div style="font-weight:600;font-size:14px">{{ s.label }}</div>
+                    <div style="opacity:.72;font-size:11px;letter-spacing:.12em;margin-top:3px">{{ s.name }}</div>
+                  </div>
+                </sc-for>
+              </div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.18em;color:#7fa8cf;margin:20px 0 8px">WORLD_SEED</div>
+              <div style="display:flex;gap:8px">
+                <input value="{{ cSeed }}" onChange="{{ cSeedChange }}" style="flex:1;box-sizing:border-box;padding:12px 14px;background:rgba(4,14,26,.85);border:1px solid rgba(150,195,235,.45);color:#d9ecff;font-family:'IBM Plex Mono',monospace;font-size:15px;outline:none;border-radius:0" />
+                <div onClick="{{ cRoll }}" style="display:flex;align-items:center;padding:0 16px;border:1px solid rgba(150,195,235,.5);color:#a9c6e2;font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.1em;cursor:pointer" style-hover="border-color:#ffd84d;color:#ffd84d">RANDOMIZE</div>
+              </div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.18em;color:#7fa8cf;margin:20px 0 8px">TERRAIN_PRESET</div>
+              <select defaultValue="Verdant Plains" style="width:100%;box-sizing:border-box;padding:12px 14px;background:rgba(4,14,26,.85);border:1px solid rgba(150,195,235,.45);color:#d9ecff;font-family:'IBM Plex Mono',monospace;font-size:14px;outline:none;border-radius:0">
+                <option>Verdant Plains</option>
+                <option>River Delta</option>
+                <option>Coastal Reach</option>
+                <option>Highlands</option>
+              </select>
+              <div style="display:flex;justify-content:space-between;margin-top:30px">
+                <div onClick="{{ cGoMenu }}" style="padding:12px 22px;border:1px solid rgba(150,195,235,.5);color:#a9c6e2;font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.12em;cursor:pointer" style-hover="border-color:#ffd84d;color:#ffd84d">&lt; BACK</div>
+                <div onClick="{{ cGoGame }}" style="padding:12px 26px;background:#ffd84d;color:#0c2135;font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:12px;letter-spacing:.12em;cursor:pointer" style-hover="background:#ffe27a">FOUND CITY &gt;</div>
+              </div>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ cIsLoad }}" hint-placeholder-val="{{ false }}">
+          <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(6,18,32,.78);animation:polisFade .3s ease both">
+            <div style="width:640px;background:rgba(8,24,40,.94);border:1px solid rgba(150,195,235,.55);outline:1px dashed rgba(150,195,235,.3);outline-offset:5px;padding:32px 38px">
+              <div style="font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:22px;letter-spacing:.06em;color:#eaf4ff;margin-bottom:22px">// LOAD CITY</div>
+              <div style="display:flex;flex-direction:column;gap:10px">
+                <div style="display:flex;align-items:center;gap:16px;padding:14px 16px;border:1px dashed rgba(150,195,235,.4);background:rgba(4,14,26,.6);cursor:pointer" style-hover="border:1px solid #ffd84d">
+                  <div style="position:relative;width:56px;height:40px;flex:none">
+                    <div style="position:absolute;left:16px;top:4px;width:22px;height:22px;background:#40b460;transform:rotate(45deg) scaleY(.55)"></div>
+                    <div style="position:absolute;left:4px;top:12px;width:22px;height:22px;background:#4880dc;transform:rotate(45deg) scaleY(.55)"></div>
+                    <div style="position:absolute;left:28px;top:14px;width:22px;height:22px;background:#dcc448;transform:rotate(45deg) scaleY(.55)"></div>
+                  </div>
+                  <div style="flex:1">
+                    <div style="font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:16px;color:#eaf4ff">nova_polis.city</div>
+                    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#7fa8cf;margin-top:3px">POP 12,480 · § 45,120 · Y4-SPRING</div>
+                  </div>
+                  <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6f93b8">2h</div>
+                  <div onClick="{{ cGoGame }}" style="padding:8px 16px;background:#ffd84d;color:#0c2135;font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:11px;letter-spacing:.12em;cursor:pointer" style-hover="background:#ffe27a">LOAD</div>
+                </div>
+                <div style="display:flex;align-items:center;gap:16px;padding:14px 16px;border:1px dashed rgba(150,195,235,.4);background:rgba(4,14,26,.6);cursor:pointer" style-hover="border:1px solid #ffd84d">
+                  <div style="position:relative;width:56px;height:40px;flex:none">
+                    <div style="position:absolute;left:16px;top:4px;width:22px;height:22px;background:#60a858;transform:rotate(45deg) scaleY(.55)"></div>
+                    <div style="position:absolute;left:4px;top:12px;width:22px;height:22px;background:#40b460;transform:rotate(45deg) scaleY(.55)"></div>
+                    <div style="position:absolute;left:28px;top:14px;width:22px;height:22px;background:#3060c8;transform:rotate(45deg) scaleY(.55)"></div>
+                  </div>
+                  <div style="flex:1">
+                    <div style="font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:16px;color:#eaf4ff">porto_verde.city</div>
+                    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#7fa8cf;margin-top:3px">POP 3,215 · § 12,900 · Y1-AUTUMN</div>
+                  </div>
+                  <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6f93b8">1d</div>
+                  <div onClick="{{ cGoGame }}" style="padding:8px 16px;background:#ffd84d;color:#0c2135;font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:11px;letter-spacing:.12em;cursor:pointer" style-hover="background:#ffe27a">LOAD</div>
+                </div>
+                <div style="display:flex;align-items:center;gap:16px;padding:14px 16px;border:1px dashed rgba(150,195,235,.4);background:rgba(4,14,26,.6);cursor:pointer" style-hover="border:1px solid #ffd84d">
+                  <div style="position:relative;width:56px;height:40px;flex:none">
+                    <div style="position:absolute;left:16px;top:4px;width:22px;height:22px;background:#dcc448;transform:rotate(45deg) scaleY(.55)"></div>
+                    <div style="position:absolute;left:4px;top:12px;width:22px;height:22px;background:#b45ac8;transform:rotate(45deg) scaleY(.55)"></div>
+                    <div style="position:absolute;left:28px;top:14px;width:22px;height:22px;background:#3c3c42;transform:rotate(45deg) scaleY(.55)"></div>
+                  </div>
+                  <div style="flex:1">
+                    <div style="font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:16px;color:#eaf4ff">ferrum_vale.city</div>
+                    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#7fa8cf;margin-top:3px">POP 28,904 · § 8,340 · Y9-WINTER</div>
+                  </div>
+                  <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6f93b8">7d</div>
+                  <div onClick="{{ cGoGame }}" style="padding:8px 16px;background:#ffd84d;color:#0c2135;font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:11px;letter-spacing:.12em;cursor:pointer" style-hover="background:#ffe27a">LOAD</div>
+                </div>
+              </div>
+              <div style="margin-top:26px">
+                <div onClick="{{ cGoMenu }}" style="display:inline-block;padding:12px 22px;border:1px solid rgba(150,195,235,.5);color:#a9c6e2;font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.12em;cursor:pointer" style-hover="border-color:#ffd84d;color:#ffd84d">&lt; BACK</div>
+              </div>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ cIsSettings }}" hint-placeholder-val="{{ false }}">
+          <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(6,18,32,.78);animation:polisFade .3s ease both">
+            <div style="width:600px;background:rgba(8,24,40,.94);border:1px solid rgba(150,195,235,.55);outline:1px dashed rgba(150,195,235,.3);outline-offset:5px;padding:32px 38px">
+              <div style="font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:22px;letter-spacing:.06em;color:#eaf4ff">// SETTINGS</div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.2em;color:#7fa8cf;border-bottom:1px dashed rgba(150,195,235,.35);padding-bottom:6px;margin:24px 0 4px">[AUDIO]</div>
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0">
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#cfe4fa">master_volume</div>
+                <input type="range" defaultValue="80" style="width:200px;accent-color:#ffd84d;cursor:pointer" />
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0">
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#cfe4fa">music</div>
+                <input type="range" defaultValue="60" style="width:200px;accent-color:#ffd84d;cursor:pointer" />
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0">
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#cfe4fa">ambience_traffic</div>
+                <input type="range" defaultValue="70" style="width:200px;accent-color:#ffd84d;cursor:pointer" />
+              </div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.2em;color:#7fa8cf;border-bottom:1px dashed rgba(150,195,235,.35);padding-bottom:6px;margin:20px 0 4px">[GRAPHICS]</div>
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0">
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#cfe4fa">ui_scale</div>
+                <input type="range" min="75" max="150" defaultValue="100" style="width:200px;accent-color:#ffd84d;cursor:pointer" />
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0">
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#cfe4fa">v_sync</div>
+                <input type="checkbox" defaultChecked="{{ true }}" style="width:18px;height:18px;accent-color:#ffd84d;cursor:pointer" />
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0">
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#cfe4fa">building_animations</div>
+                <input type="checkbox" defaultChecked="{{ true }}" style="width:18px;height:18px;accent-color:#ffd84d;cursor:pointer" />
+              </div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.2em;color:#7fa8cf;border-bottom:1px dashed rgba(150,195,235,.35);padding-bottom:6px;margin:20px 0 4px">[GAMEPLAY]</div>
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0">
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#cfe4fa">autosave</div>
+                <select defaultValue="Every 10 min" style="width:200px;padding:9px 12px;background:rgba(4,14,26,.85);border:1px solid rgba(150,195,235,.45);color:#d9ecff;font-family:'IBM Plex Mono',monospace;font-size:12px;outline:none;border-radius:0">
+                  <option>Off</option>
+                  <option>Every 5 min</option>
+                  <option>Every 10 min</option>
+                  <option>Every 30 min</option>
+                </select>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0">
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#cfe4fa">edge_scrolling</div>
+                <input type="checkbox" defaultChecked="{{ true }}" style="width:18px;height:18px;accent-color:#ffd84d;cursor:pointer" />
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0">
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#cfe4fa">tutorial_tips</div>
+                <input type="checkbox" defaultChecked="{{ true }}" style="width:18px;height:18px;accent-color:#ffd84d;cursor:pointer" />
+              </div>
+              <div style="display:flex;justify-content:space-between;margin-top:28px">
+                <div onClick="{{ cGoMenu }}" style="padding:12px 22px;border:1px solid rgba(150,195,235,.5);color:#a9c6e2;font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.12em;cursor:pointer" style-hover="border-color:#ffd84d;color:#ffd84d">&lt; BACK</div>
+                <div onClick="{{ cGoMenu }}" style="padding:12px 26px;background:#ffd84d;color:#0c2135;font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:12px;letter-spacing:.12em;cursor:pointer" style-hover="background:#ffe27a">APPLY &gt;</div>
+              </div>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ cIsGame }}" hint-placeholder-val="{{ false }}">
+          <div style="position:absolute;inset:0;animation:polisFade .3s ease both">
+            <div style="position:absolute;left:50%;bottom:34px;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:12px;background:rgba(8,24,40,.94);border:1px solid rgba(150,195,235,.55);padding:20px 30px">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#cfe4fa">// simulation running — in-game HUD arrives in phase 2</div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.14em;color:#ffd84d">§ 50,000 · POP 0 · TICK 10/S</div>
+              <div onClick="{{ cGoMenu }}" style="padding:10px 20px;border:1px solid rgba(150,195,235,.5);color:#a9c6e2;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.12em;cursor:pointer" style-hover="border-color:#ffd84d;color:#ffd84d">&lt; BACK TO MENU</div>
+            </div>
+          </div>
+        </sc-if>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;traffic&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Background city&quot;},&quot;density&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:0.75,&quot;min&quot;:0.2,&quot;max&quot;:1,&quot;step&quot;:0.05,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Background city&quot;}}">
+class Component extends DCLogic {
+  state = {
+    a: { screen: 'menu', size: 128, seed: '314159' },
+    b: { screen: 'menu', size: 128, seed: '271828' },
+    c: { screen: 'menu', size: 64, seed: '161803' }
+  };
+
+  _go(k, screen) {
+    this.setState(s => ({ [k]: { ...s[k], screen } }));
+  }
+
+  renderVals() {
+    const themes = {
+      a: {
+        base: { flex: '1', padding: '11px 8px', border: '1px solid #b9ab80', background: 'rgba(255,253,246,.6)', color: '#5a5138', fontFamily: 'Lora,serif', textAlign: 'center', cursor: 'pointer', borderRadius: '2px' },
+        active: { background: '#24506e', color: '#f4efe4', border: '1px solid #24506e' }
+      },
+      b: {
+        base: { flex: '1', padding: '11px 8px', border: '1px solid #2a3a4e', background: '#0b1119', color: '#8fa3bb', fontFamily: 'Barlow,sans-serif', textAlign: 'center', cursor: 'pointer', borderRadius: '8px' },
+        active: { background: 'rgba(99,168,255,.15)', border: '1px solid #63a8ff', color: '#eaf3ff' }
+      },
+      c: {
+        base: { flex: '1', padding: '11px 8px', border: '1px dashed rgba(150,195,235,.45)', background: 'rgba(5,15,28,.5)', color: '#9db8d4', fontFamily: '"IBM Plex Mono",monospace', textAlign: 'center', cursor: 'pointer' },
+        active: { border: '1px solid #ffd84d', color: '#ffd84d', background: 'rgba(255,216,77,.08)' }
+      }
+    };
+    const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
+    const v = {};
+    for (const k of ['a', 'b', 'c']) {
+      const o = this.state[k];
+      for (const scr of ['menu', 'new', 'load', 'settings', 'game']) {
+        v[k + 'Is' + cap(scr)] = o.screen === scr;
+        v[k + 'Go' + cap(scr)] = () => this._go(k, scr);
+      }
+      v[k + 'Seed'] = o.seed;
+      v[k + 'SeedChange'] = e => this.setState(s => ({ [k]: { ...s[k], seed: e.target.value } }));
+      v[k + 'Roll'] = () => this.setState(s => ({ [k]: { ...s[k], seed: String(100000 + Math.floor(Math.random() * 900000)) } }));
+      v[k + 'Sizes'] = [[64, 'HAMLET'], [128, 'TOWNSHIP'], [256, 'METROPOLIS']].map(([n, name]) => ({
+        label: n + ' × ' + n,
+        name,
+        style: o.size === n ? { ...themes[k].base, ...themes[k].active } : themes[k].base,
+        pick: () => this.setState(s => ({ [k]: { ...s[k], size: n } }))
+      }));
+    }
+    v.trafficAttr = (this.props.traffic ?? true) ? 'on' : 'off';
+    v.densityAttr = String(this.props.density ?? 0.75);
+    return v;
+  }
+}
+
+</script>
+</body>
+</html>

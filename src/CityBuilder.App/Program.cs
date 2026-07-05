@@ -11,6 +11,8 @@ using CityBuilder.Networks;
 using CityBuilder.Pathfinding;
 using CityBuilder.Persistence;
 using CityBuilder.Presentation;
+using CityBuilder.Shell;
+using CityBuilder.Simulation;
 using CityBuilder.Traffic;
 using CityBuilder.Utilities;
 using CityBuilder.Zoning;
@@ -21,7 +23,8 @@ using CityBuilder.Zoning;
 //  pump GameSimulation.Update(dt) from its frame loop, observing the same events.
 // =============================================================================
 
-Console.WriteLine("== CityBuilder.Core — headless simulation ==\n");
+Console.WriteLine($"== {GameInfo.Kicker} {GameInfo.Title} — {GameInfo.Tagline} (headless) ==");
+Console.WriteLine(GameInfo.FooterLine(10) + "\n");
 
 var sim = new GameSimulation(new GameConfig(width: 48, height: 48, seed: 1337, ticksPerSecond: 10));
 
@@ -197,6 +200,76 @@ ulong replayChecksum = ReplayRun(codec, logBytes, seed: 99, finalTick);
 Console.WriteLine($"  log: {entryCount} entries, {logBytes.Length} bytes on the wire (zone, tax raise, undo)");
 Console.WriteLine($"  live={liveChecksum:X16} replay={replayChecksum:X16} -> {(liveChecksum == replayChecksum ? "MATCH (PASS)" : "MISMATCH (FAIL)")}");
 
+// --- Game shell: the "Aegean Marble" pre-game flow, headless (design handoff option 1a) ---
+Console.WriteLine("\n-- Game shell: Found a New City -> save -> Load City list -> Settings --");
+
+var shell = new GameShell(newCityForm: new NewCityForm(randomizerSeed: 7));
+shell.ScreenChanged += s => Console.WriteLine($"  [shell] screen -> {s}");
+
+// Found a New City — the exact values from the approved mockup.
+shell.OpenNewCity();
+shell.NewCity.CityName = "Nova Polis";
+shell.NewCity.MapSize = MapSizePreset.Township; // 128 x 128
+shell.NewCity.SeedText = "314159";
+shell.NewCity.Terrain = TerrainPreset.VerdantPlains;
+GameConfig foundedConfig = shell.FoundCity();
+Console.WriteLine($"  founded '{foundedConfig.CityName}': {foundedConfig.Width}x{foundedConfig.Height}, seed {foundedConfig.Seed}, {foundedConfig.Terrain}");
+
+// World generation per terrain preset (deterministic; same seed => same map).
+var novaPolis = new GameSimulation(foundedConfig);
+novaPolis.Definitions.LoadFrom(DemoDefinitions());
+TerrainGenerator.Generate(novaPolis.Map.Terrain, foundedConfig.Seed, foundedConfig.Terrain);
+Console.WriteLine($"  terrain census: {TerrainCensus(novaPolis)}");
+
+var deltaPreview = new GameSimulation(new GameConfig(128, 128, foundedConfig.Seed, 10, "Delta Preview", TerrainPreset.RiverDelta));
+TerrainGenerator.Generate(deltaPreview.Map.Terrain, foundedConfig.Seed, TerrainPreset.RiverDelta);
+Console.WriteLine($"  (river delta, same seed): {TerrainCensus(deltaPreview)}");
+
+// Grow the new city a little so its save has real numbers on the Load screen.
+SeedDesirability(novaPolis, new GridCoord(40, 40), new GridCoord(70, 70), 1.5f);
+novaPolis.Submit(new ZoneAreaCommand(new GridCoord(44, 44), new GridCoord(64, 64), ZoneType.Residential, ZoneDensity.Medium));
+for (int i = 0; i < 300; i++) novaPolis.Step();
+Console.WriteLine($"  after 300 ticks: population~{ZoningStats.Population(novaPolis.Map.Zoning)}, treasury {novaPolis.Economy.Balance}, {GameCalendar.Describe(novaPolis.CurrentTick)}");
+
+// Save two cities and list them the way the Load City screen does.
+string savesDir = Path.Combine(Path.GetTempPath(), "polis-saves");
+Directory.CreateDirectory(savesDir);
+using (FileStream f = File.Create(Path.Combine(savesDir, "nova-polis" + SaveCatalog.Extension)))
+{
+    SaveGame.Write(novaPolis, f);
+}
+
+var portoVerde = new GameSimulation(new GameConfig(64, 64, 271828, 10, "Porto Verde", TerrainPreset.CoastalReach));
+portoVerde.Definitions.LoadFrom(DemoDefinitions());
+TerrainGenerator.Generate(portoVerde.Map.Terrain, 271828, TerrainPreset.CoastalReach);
+for (int i = 0; i < 120; i++) portoVerde.Step();
+using (FileStream f = File.Create(Path.Combine(savesDir, "porto-verde" + SaveCatalog.Extension)))
+{
+    SaveGame.Write(portoVerde, f);
+}
+
+Console.WriteLine("  Load City:");
+DateTime nowUtc = DateTime.UtcNow;
+foreach (SaveSlot slot in SaveCatalog.Scan(savesDir))
+{
+    Console.WriteLine($"    {slot.Metadata.CityName,-12} {slot.Metadata.Describe(),-52} {RelativeTime.Describe(slot.Metadata.SavedAtUtc, nowUtc)}   [LOAD]");
+}
+
+// Settings screen semantics: BACK discards, APPLY commits; then a persistence round-trip.
+shell.ExitToTitle();
+shell.OpenSettings();
+shell.Settings.MusicVolume = 25;
+shell.Back(); // discard
+Console.WriteLine($"  settings after BACK: music={shell.Settings.MusicVolume} (discarded)");
+shell.OpenSettings();
+shell.Settings.MusicVolume = 25;
+shell.ApplySettings(); // commit
+var settingsBlob = new MemoryStream();
+shell.Settings.Save(settingsBlob);
+settingsBlob.Position = 0;
+GameSettings reloadedSettings = GameSettings.Load(settingsBlob);
+Console.WriteLine($"  settings after APPLY + reload: music={reloadedSettings.MusicVolume}, autosave={reloadedSettings.Autosave}, uiScale={reloadedSettings.UiScale}%");
+
 // --- Determinism: identical seed + identical inputs => identical result (incl. traffic) ---
 Console.WriteLine("\n-- Determinism check (zoning + pathfinding + traffic + utilities + economy) --");
 var runA = RunScenario(seed: 42, ticks: 300);
@@ -215,6 +288,25 @@ return;
 static InMemoryDefinitionSource DemoDefinitions() => new InMemoryDefinitionSource()
     .Add(new BuildingDefinition { Id = "Residential_Standard_L1", DisplayName = "Standard Housing", Category = ZoneType.Residential, MaxOccupancy = 24 })
     .Add(new VehicleDefinition { Id = "CompactHatch_Tier1", DisplayName = "Compact Hatchback", Class = VehicleClass.Passenger, MaxSpeed = 3f, Capacity = 4 });
+
+// Tile-kind counts for a quick look at what a terrain preset produced.
+static string TerrainCensus(GameSimulation sim)
+{
+    int grass = 0, water = 0, forest = 0, sand = 0, rock = 0;
+    foreach (TerrainCell cell in sim.Map.Terrain.AsSpan())
+    {
+        switch (cell.Kind)
+        {
+            case TerrainKind.Water: water++; break;
+            case TerrainKind.Forest: forest++; break;
+            case TerrainKind.Sand: sand++; break;
+            case TerrainKind.Rock: rock++; break;
+            default: grass++; break;
+        }
+    }
+
+    return $"grass {grass}, forest {forest}, water {water}, sand {sand}, rock {rock}";
+}
 
 // Deterministic bootstrap shared by the recorded session and its replay: same config/seed,
 // same definitions, same scenario content, same systems. Only the COMMANDS differ, and those
