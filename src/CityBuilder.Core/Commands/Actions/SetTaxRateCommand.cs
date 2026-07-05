@@ -23,6 +23,10 @@ public sealed class SetTaxRateCommand : ICommand
         _newRate = newRate;
     }
 
+    // Read-only views of the captured parameters (used by the replay codec).
+    public ZoneType Category => _category;
+    public float NewRate => _newRate;
+
     public string Name => $"SetTax({_category},{_newRate:0.##})";
 
     public bool CanExecute(ISimulationContext context)

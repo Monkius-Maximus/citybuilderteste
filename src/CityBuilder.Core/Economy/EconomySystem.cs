@@ -70,6 +70,9 @@ public sealed class EconomySystem : IEconomySystem
     public Ledger Ledger => _ledger;
     public Money Balance => _budget.Balance;
 
+    /// <summary>Overwrite the treasury balance when loading a save (persistence only).</summary>
+    public void RestoreBalance(Money balance) => _budget.RestoreBalance(balance);
+
     // --- ISimulationSystem ---
     public string Name => "Economy";
     public int TickInterval => _interval;

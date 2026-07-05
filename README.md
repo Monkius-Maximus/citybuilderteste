@@ -33,6 +33,7 @@ dotnet run --project src/CityBuilder.App
 - **Utilidades** — energia/água por cobertura de flow field de Dijkstra + alocação de capacidade (brownout).
 - **Padrões** — Object Pooling, Factory (orientado a dados), Command (undo/redo + base multiplayer) e Observer/Pub-Sub.
 - **Economia** — ciclo sobre os contratos: impostos das zonas + faturamento de utilidades − manutenção → tesouro, com mercados de trabalho/bens (comando de imposto integrado, com undo).
+- **Persistência & Replay** — save binário do estado persistente, log de comandos serializável e replay determinístico verificado por checksum (fundação do multiplayer lockstep).
 - **Apresentação** — contratos de view + geração procedural de *placeholders* (polígonos coloridos isométricos).
 
 Detalhes completos, decisões de projeto e diretório comentado: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).

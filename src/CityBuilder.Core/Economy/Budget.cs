@@ -35,6 +35,9 @@ public sealed class Budget : IBudget
     public Money IncomeOf(BudgetCategory category) => GetOrZero(_incomeByCategory, category);
     public Money ExpenseOf(BudgetCategory category) => GetOrZero(_expenseByCategory, category);
 
+    /// <summary>Overwrite the balance when loading a save (persistence only).</summary>
+    public void RestoreBalance(Money balance) => _balance = balance;
+
     /// <summary>Apply the period's net to the balance and reset the period. Returns (income, expenses).</summary>
     public (Money Income, Money Expenses) Settle()
     {

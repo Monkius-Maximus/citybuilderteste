@@ -67,6 +67,13 @@ public sealed class SimulationClock
     /// <summary>Advance the global counter by exactly one tick and return its index.</summary>
     public long ConsumeTick() => ++CurrentTick;
 
+    /// <summary>Restore the tick counter from a save; discards any accumulated partial time.</summary>
+    public void Restore(long tick)
+    {
+        CurrentTick = tick;
+        _accumulator = 0;
+    }
+
     /// <summary>Interpolation factor in [0,1) for smooth rendering between fixed ticks.</summary>
     public float Alpha => (float)(_accumulator / SecondsPerTick);
 }

@@ -9,6 +9,7 @@ using CityBuilder.Events.Notifications;
 using CityBuilder.Grid;
 using CityBuilder.Networks;
 using CityBuilder.Pathfinding;
+using CityBuilder.Persistence;
 using CityBuilder.Presentation;
 using CityBuilder.Traffic;
 using CityBuilder.Utilities;
@@ -52,9 +53,7 @@ sim.Events.Subscribe<MarketClearedEvent>(e =>
 sim.Start();
 
 // --- Factory + data-driven definitions (strictly generic identifiers) ---
-sim.Definitions.LoadFrom(new InMemoryDefinitionSource()
-    .Add(new BuildingDefinition { Id = "Residential_Standard_L1", DisplayName = "Standard Housing", Category = ZoneType.Residential, MaxOccupancy = 24 })
-    .Add(new VehicleDefinition { Id = "CompactHatch_Tier1", DisplayName = "Compact Hatchback", Class = VehicleClass.Passenger, MaxSpeed = 3f, Capacity = 4 }));
+sim.Definitions.LoadFrom(DemoDefinitions());
 
 // --- Commands: zone an area (undoable) and seed its desirability so it will grow ---
 Console.WriteLine("\n-- Zoning command --");
@@ -172,6 +171,32 @@ sim.Undo();
 for (int i = 0; i < 60; i++) sim.Step();
 Console.WriteLine($"After Undo + settle:        rate {taxPolicy.GetRate(ZoneType.Residential):0.00}, income {ecoIncome}");
 
+// --- Persistence: binary snapshot save -> fresh sim -> load -> identical checksum ---
+Console.WriteLine("\n-- Persistence: binary snapshot save/load --");
+var saveStream = new MemoryStream();
+SaveGame.Write(sim, saveStream);
+ulong checksumLive = StateChecksum.Compute(sim);
+
+saveStream.Position = 0;
+GameConfig savedConfig = SaveGame.ReadConfig(saveStream);
+var loaded = new GameSimulation(savedConfig);
+loaded.Definitions.LoadFrom(DemoDefinitions()); // bootstrap = definitions/systems only; world content comes from the save
+saveStream.Position = 0;
+SaveGame.ReadInto(loaded, saveStream);
+
+ulong checksumLoaded = StateChecksum.Compute(loaded);
+Console.WriteLine($"  snapshot: {saveStream.Length} bytes; live={checksumLive:X16} loaded={checksumLoaded:X16} -> {(checksumLive == checksumLoaded ? "MATCH (PASS)" : "MISMATCH (FAIL)")}");
+Console.WriteLine($"  restored: tick={loaded.CurrentTick}, treasury={loaded.Economy.Balance}, buildings={loaded.Entities.AliveCount}, " +
+                  $"road nodes={loaded.GetNetwork(NetworkType.Road).NodeCount} (vehicles are transient by design)");
+
+// --- Replay: record commands (with ticks), serialize the log, re-run -> identical checksum ---
+Console.WriteLine("\n-- Replay: serialized command log reproduces the exact state --");
+var codec = CommandCodec.CreateDefault();
+(ulong liveChecksum, byte[] logBytes, long finalTick, int entryCount) = RecordedRun(codec, seed: 99);
+ulong replayChecksum = ReplayRun(codec, logBytes, seed: 99, finalTick);
+Console.WriteLine($"  log: {entryCount} entries, {logBytes.Length} bytes on the wire (zone, tax raise, undo)");
+Console.WriteLine($"  live={liveChecksum:X16} replay={replayChecksum:X16} -> {(liveChecksum == replayChecksum ? "MATCH (PASS)" : "MISMATCH (FAIL)")}");
+
 // --- Determinism: identical seed + identical inputs => identical result (incl. traffic) ---
 Console.WriteLine("\n-- Determinism check (zoning + pathfinding + traffic + utilities + economy) --");
 var runA = RunScenario(seed: 42, ticks: 300);
@@ -185,6 +210,62 @@ Console.WriteLine("\nDone.");
 return;
 
 // ------------------------------- helpers -------------------------------
+
+// The demo's data catalog (strictly generic identifiers, per the legal constraint).
+static InMemoryDefinitionSource DemoDefinitions() => new InMemoryDefinitionSource()
+    .Add(new BuildingDefinition { Id = "Residential_Standard_L1", DisplayName = "Standard Housing", Category = ZoneType.Residential, MaxOccupancy = 24 })
+    .Add(new VehicleDefinition { Id = "CompactHatch_Tier1", DisplayName = "Compact Hatchback", Class = VehicleClass.Passenger, MaxSpeed = 3f, Capacity = 4 });
+
+// Deterministic bootstrap shared by the recorded session and its replay: same config/seed,
+// same definitions, same scenario content, same systems. Only the COMMANDS differ, and those
+// come from the log.
+static GameSimulation BuildReplayScenario(ulong seed)
+{
+    var s = new GameSimulation(new GameConfig(48, 48, seed));
+    s.Definitions.LoadFrom(DemoDefinitions());
+    RoadGridBuilder.BuildGrid(s.GetNetwork(NetworkType.Road), new GridCoord(4, 4), new GridCoord(12, 12), 1f, 6);
+    SeedDesirability(s, new GridCoord(20, 20), new GridCoord(34, 34), 1.5f);
+    VehicleSpawner sp = s.CreateVehicleSpawner("CompactHatch_Tier1");
+    s.Scheduler.Register(new TrafficSpawnSystem(sp, s.Routes, s.Random, tickInterval: 3, maxActive: 24, spawnPerTick: 2));
+    return s;
+}
+
+// A live session with a recorder attached: zone at tick 0, raise taxes at tick 120, undo at
+// tick 180. Returns the final checksum plus the serialized command log.
+static (ulong Checksum, byte[] LogBytes, long FinalTick, int Entries) RecordedRun(CommandCodec codec, ulong seed)
+{
+    GameSimulation s = BuildReplayScenario(seed);
+    var log = new ReplayLog();
+    s.Commands.Recorder = new ReplayRecorder(log);
+
+    s.Submit(new ZoneAreaCommand(new GridCoord(22, 22), new GridCoord(32, 32), ZoneType.Residential, ZoneDensity.Medium));
+    for (int i = 0; i < 240; i++)
+    {
+        s.Step();
+        if (s.CurrentTick == 120)
+        {
+            s.Submit(new SetTaxRateCommand(s.Economy.Taxes, ZoneType.Residential, 0.15f));
+        }
+
+        if (s.CurrentTick == 180)
+        {
+            s.Undo();
+        }
+    }
+
+    var wire = new MemoryStream();
+    codec.WriteLog(log, wire);
+    return (StateChecksum.Compute(s), wire.ToArray(), s.CurrentTick, log.Count);
+}
+
+// Replay from the serialized bytes into a freshly bootstrapped scenario.
+static ulong ReplayRun(CommandCodec codec, byte[] logBytes, ulong seed, long finalTick)
+{
+    GameSimulation s = BuildReplayScenario(seed);
+    ReplayLog log = codec.ReadLog(new MemoryStream(logBytes), s);
+    ReplayPlayer.Play(s, log, finalTick);
+    return StateChecksum.Compute(s);
+}
 
 static void SeedDesirability(GameSimulation sim, GridCoord min, GridCoord max, float amount)
 {
@@ -202,8 +283,7 @@ static void SeedDesirability(GameSimulation sim, GridCoord min, GridCoord max, f
 static (int Developed, int Arrived, int Spawned, int PowerServed, long Treasury) RunScenario(ulong seed, int ticks)
 {
     var s = new GameSimulation(new GameConfig(48, 48, seed));
-    s.Definitions.LoadFrom(new InMemoryDefinitionSource()
-        .Add(new VehicleDefinition { Id = "CompactHatch_Tier1", DisplayName = "Compact Hatchback", Class = VehicleClass.Passenger, MaxSpeed = 3f, Capacity = 4 }));
+    s.Definitions.LoadFrom(DemoDefinitions());
 
     int arrived = 0, spawned = 0, powerServed = 0;
     long treasury = 0;

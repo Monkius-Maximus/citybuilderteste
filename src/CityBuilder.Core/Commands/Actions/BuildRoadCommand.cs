@@ -23,6 +23,11 @@ public sealed class BuildRoadCommand : ICommand
         _capacity = capacity;
     }
 
+    // Read-only views of the captured parameters (used by the replay codec).
+    public GridCoord From => _from;
+    public GridCoord To => _to;
+    public int Capacity => _capacity;
+
     public string Name => $"BuildRoad({_from}->{_to})";
 
     public bool CanExecute(ISimulationContext context)
