@@ -9,6 +9,7 @@ using CityBuilder.Events.Notifications;
 using CityBuilder.Grid;
 using CityBuilder.Networks;
 using CityBuilder.Pathfinding;
+using CityBuilder.Population;
 using CityBuilder.Simulation;
 using CityBuilder.Traffic;
 using CityBuilder.Utilities;
@@ -51,6 +52,10 @@ public sealed class GameSimulation : ISimulationContext
     // Economy layer: taxes, markets, upkeep and the city treasury.
     public EconomySystem Economy { get; }
 
+    // Population layer: RCI demand model (drives growth) + sector money circulation.
+    public DemandModel Demand { get; }
+    public PopulationSystem Population { get; }
+
     // Exposed as the interface type (exact match => clean implicit implementation of
     // ISimulationContext.Events). The concrete bus is held privately; callers only need
     // Subscribe/Publish, which IEventBus provides.
@@ -85,6 +90,12 @@ public sealed class GameSimulation : ISimulationContext
             Events,
             startingBalance: Money.FromWhole(50_000),
             settings: EconomySettings.Default,
+            tickInterval: Simulation.TickInterval.Slow);
+
+        DemandSettings demandSettings = DemandSettings.Default;
+        Demand = new DemandModel(demandSettings);
+        Population = new PopulationSystem(
+            Map, HeatMaps, Economy.Taxes, Economy.Ledger, Demand, demandSettings, Events,
             tickInterval: Simulation.TickInterval.Slow);
 
         RegisterComponents();
@@ -163,8 +174,11 @@ public sealed class GameSimulation : ISimulationContext
 
     private void RegisterSystems()
     {
+        // Population runs first: it refreshes the RCI demand the zoning growth rule reads below.
+        Scheduler.Register(Population);
+
         var automata = new CellularAutomataEngine();
-        automata.AddRule(new ZoneGrowthRule());
+        automata.AddRule(new DemandGrowthRule(Demand));
 
         var zoning = new ZoningSystem(Map, HeatMaps, automata, Events, Random);
         Scheduler.Register(zoning);

@@ -10,6 +10,7 @@ using CityBuilder.Grid;
 using CityBuilder.Networks;
 using CityBuilder.Pathfinding;
 using CityBuilder.Persistence;
+using CityBuilder.Population;
 using CityBuilder.Presentation;
 using CityBuilder.Shell;
 using CityBuilder.Simulation;
@@ -147,6 +148,14 @@ Console.WriteLine("\n-- Economy (treasury / markets) --");
 Console.WriteLine($"  settle @tick {ecoTick}: balance={ecoBalance}, income={ecoIncome}, expenses={ecoExpenses}, population~{ecoPopulation}");
 Console.WriteLine($"  market prices: labour={labourPrice}, goods={goodsPrice}");
 
+// --- Population & RCI demand: the growth loop (zones -> people -> demand -> growth) ---
+Console.WriteLine("\n-- Population & RCI demand --");
+DemandModel demand = sim.Demand;
+Console.WriteLine($"  population {demand.Population:N0}, jobs {demand.Jobs:N0}, employment {demand.EmploymentRate:P0}");
+Console.WriteLine($"  demand  R {demand.Residential:+0.00;-0.00} · C {demand.Commercial:+0.00;-0.00} · I {demand.Industrial:+0.00;-0.00}");
+Console.WriteLine($"  sector balances: households {sim.Population.Sectors.Households.Balance}, " +
+                  $"commerce {sim.Population.Sectors.Commerce.Balance}, industry {sim.Population.Sectors.Industry.Balance}");
+
 // --- Object pooling ---
 Console.WriteLine("\n-- Object pooling --");
 var pool = new CityBuilder.Common.ObjectPool<Particle>(() => new Particle(), prewarm: 4);
@@ -271,7 +280,7 @@ GameSettings reloadedSettings = GameSettings.Load(settingsBlob);
 Console.WriteLine($"  settings after APPLY + reload: music={reloadedSettings.MusicVolume}, autosave={reloadedSettings.Autosave}, uiScale={reloadedSettings.UiScale}%");
 
 // --- Determinism: identical seed + identical inputs => identical result (incl. traffic) ---
-Console.WriteLine("\n-- Determinism check (zoning + pathfinding + traffic + utilities + economy) --");
+Console.WriteLine("\n-- Determinism check (zoning + pathfinding + traffic + utilities + economy + population) --");
 var runA = RunScenario(seed: 42, ticks: 300);
 var runB = RunScenario(seed: 42, ticks: 300);
 bool same = runA == runB;
@@ -371,18 +380,19 @@ static void SeedDesirability(GameSimulation sim, GridCoord min, GridCoord max, f
     }
 }
 
-// Returns (developedCells, arrivedVehicles, spawnedVehicles, powerServed, treasuryUnits) after a scripted run.
-static (int Developed, int Arrived, int Spawned, int PowerServed, long Treasury) RunScenario(ulong seed, int ticks)
+// Returns (developedCells, arrivedVehicles, spawnedVehicles, powerServed, treasuryUnits, population) after a scripted run.
+static (int Developed, int Arrived, int Spawned, int PowerServed, long Treasury, long Population) RunScenario(ulong seed, int ticks)
 {
     var s = new GameSimulation(new GameConfig(48, 48, seed));
     s.Definitions.LoadFrom(DemoDefinitions());
 
     int arrived = 0, spawned = 0, powerServed = 0;
-    long treasury = 0;
+    long treasury = 0, population = 0;
     s.Events.Subscribe<VehicleArrivedEvent>(_ => arrived++);
     s.Events.Subscribe<VehicleSpawnedEvent>(_ => spawned++);
     s.Events.Subscribe<UtilityUpdatedEvent>(e => powerServed = e.ServedConsumers);
     s.Events.Subscribe<BudgetChangedEvent>(e => treasury = e.Balance.Units);
+    s.Events.Subscribe<PopulationChangedEvent>(e => population = e.Population);
 
     RoadGridBuilder.BuildGrid(s.GetNetwork(NetworkType.Road), new GridCoord(4, 4), new GridCoord(12, 12), 1f, 6);
     SeedDesirability(s, new GridCoord(20, 20), new GridCoord(34, 34), 1.5f);
@@ -417,5 +427,5 @@ static (int Developed, int Arrived, int Spawned, int PowerServed, long Treasury)
         }
     }
 
-    return (developed, arrived, spawned, powerServed, treasury);
+    return (developed, arrived, spawned, powerServed, treasury, population);
 }

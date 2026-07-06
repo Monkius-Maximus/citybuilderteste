@@ -56,7 +56,8 @@ citybuilderteste/
     │   │   ├── ZoneType.cs / ZoneCell.cs
     │   │   ├── HeatMap.cs / HeatMapRegistry.cs / IHeatMapProvider.cs  # mapas de calor
     │   │   ├── ICellularAutomatonRule.cs / CellularAutomataEngine.cs   # CA c/ double-buffer
-    │   │   ├── Rules/ZoneGrowthRule.cs         # crescimento por desejabilidade/poluição/crime
+    │   │   ├── Rules/ZoneGrowthRule.cs         # regra base (desejabilidade/poluição/crime)
+    │   │   ├── Rules/DemandGrowthRule.cs       # regra de produção: desejabilidade local + demanda RCI
     │   │   └── ZoningSystem.cs
     │   ├── Networks/                     # 4) Logística & Rede de Fluxo (grafos)
     │   │   ├── NetworkType.cs / NetworkIds.cs / NetworkElements.cs
@@ -100,7 +101,13 @@ citybuilderteste/
     │   │   ├── Money.cs / EconomyContracts.cs   # tipo Money + interfaces (IBudget/IMarket/…)
     │   │   ├── Budget.cs / Ledger.cs / Market.cs / TaxPolicy.cs / EconomicAgent.cs
     │   │   ├── EconomySettings.cs               # constantes tunáveis (impostos/manutenção)
+    │   │   ├── EconomicAgentIds.cs              # ids fixos: cidade + setores no ledger
     │   │   └── EconomySystem.cs                 # impostos + mercados + manutenção -> tesouro
+    │   ├── Population/                   # População & Demanda RCI (o laço de crescimento)
+    │   │   ├── DemandModel.cs                   # deriva pop/empregos, calcula demanda R/C/I
+    │   │   ├── DemandSettings.cs                # constantes do modelo (tunáveis)
+    │   │   ├── SectorAccounts.cs                # domicílios/comércio/indústria via EconomicAgent+Ledger
+    │   │   └── PopulationSystem.cs              # atualiza demanda, circula salários, publica
     │   ├── Presentation/                 # Contratos de View (implementados pela engine)
     │   │   ├── IRenderer.cs / Color32.cs / TileVisual.cs
     │   │   ├── IProceduralSpriteFactory.cs / PlaceholderSpriteFactory.cs
@@ -281,7 +288,35 @@ A materialização do investimento em determinismo — e a fundação direta do 
 O demo headless prova as duas pontas: snapshot → load com checksum idêntico, e sessão gravada
 (zonear, subir imposto, undo) → serializar → replay com checksum idêntico.
 
-## Shell de Jogo & Identidade Visual "Aegean Marble" (milestone atual)
+## População & Demanda RCI (milestone atual)
+
+O **laço central de um city builder**: zonas → pessoas → demanda → crescimento → mais pessoas.
+Conecta zoneamento, economia e (indiretamente) tráfego/utilidades num ciclo que se auto-regula.
+
+- **`DemandModel`** — deriva do zoneamento desenvolvido a **população**, a **força de trabalho**
+  e os **empregos**, e calcula a demanda **Residencial/Comercial/Industrial** em `[-1,1]`:
+  residencial sobe com empregos não preenchidos + desejabilidade; comercial sobe com população
+  não atendida; industrial sobe com exportação-base + mão de obra ociosa. **Impostos suprimem**
+  a demanda de cada categoria — então o comando de imposto passa a dirigir o **crescimento**,
+  não só a receita. Tudo determinístico (quantidades inteiras, razões em ordem fixa).
+- **`PopulationSystem`** (cadência lenta, roda **antes** do zoneamento) — recalcula a demanda a
+  partir do estado atual, circula os salários pelos setores e publica `PopulationChangedEvent` +
+  `DemandChangedEvent` (as barras RCI da UI).
+- **`DemandGrowthRule`** — a regra de produção do autômato celular: uma célula cresce quando o
+  **sinal local** (desejabilidade/valor − poluição/crime) **e** a **demanda RCI global** da sua
+  categoria são favoráveis, e decai quando ficam negativos — limitada pelo teto da densidade.
+  Combinar o espacial (heat-maps) com o global (demanda) é o que faz os bairros preencherem onde
+  são ao mesmo tempo desejados e agradáveis. Substitui a `ZoneGrowthRule` na composição.
+- **`SectorAccounts`** — os "agentes por-empresa/domicílio" na granularidade de pool: três
+  `EconomicAgent`s (domicílios/comércio/indústria) que a cada tick **fazem o dinheiro circular**
+  pelo `Ledger` compartilhado (empregadores pagam salários → domicílios consomem no comércio →
+  comércio reabastece na indústria). Transferências são atômicas (débito+crédito) e puladas se o
+  pagador não pode arcar, então o ledger sempre fecha.
+
+Ordem no tick: **população → zoneamento → tráfego → utilidades → economia**, para o crescimento
+ler a demanda fresca. O check de determinismo do demo agora compara também a população final.
+
+## Shell de Jogo & Identidade Visual "Aegean Marble"
 
 O jogo agora tem nome — **THE GAME OF POLIS** — e uma direção visual aprovada (handoff em
 `docs/design/main-menu/`, opção **1a "Aegean Marble"**: pergaminho, serifadas Marcellus/Lora,
@@ -360,7 +395,7 @@ produzem o mesmo resultado).
 - [x] **Economia** — impostos/mercados/manutenção → tesouro, sobre os contratos; comando de imposto integrado.
 - [x] **Persistência & Replay** — save binário, log de comandos serializável, replay na mesma cadência, checksum de estado.
 - [x] **Shell & identidade visual** — tokens "Aegean Marble", máquina de telas, New City/Load/Settings, terreno procedural, calendário, save v2 c/ metadados.
+- [x] **Crescimento populacional & demanda RCI** — modelo de demanda dirige o crescimento; setores circulam dinheiro via `EconomicAgent`/`Ledger`.
 - [ ] **HUD in-game** (fase 2 do design — o handoff marca o ponto de entrega no stub in-game).
-- [ ] **Crescimento populacional** e agentes de demanda por-empresa/domicílio (o `EconomicAgent`/`Ledger` já existem).
 - [ ] **Multiplayer lockstep** sobre o fluxo de comandos (codec/replay/checksum já são os blocos de construção).
 - [ ] Remoção estrutural completa em `FlowNetwork` (reciclagem de nós/arestas interiores).

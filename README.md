@@ -38,6 +38,7 @@ dotnet run --project src/CityBuilder.App
 - **Padrões** — Object Pooling, Factory (orientado a dados), Command (undo/redo + base multiplayer) e Observer/Pub-Sub.
 - **Economia** — ciclo sobre os contratos: impostos das zonas + faturamento de utilidades − manutenção → tesouro, com mercados de trabalho/bens (comando de imposto integrado, com undo).
 - **Persistência & Replay** — save binário do estado persistente, log de comandos serializável e replay determinístico verificado por checksum (fundação do multiplayer lockstep).
+- **População & Demanda RCI** — modelo de demanda Residencial/Comercial/Industrial que dirige o crescimento das zonas (zonas → pessoas → demanda → crescimento), com setores (domicílios/comércio/indústria) circulando dinheiro via `EconomicAgent`/`Ledger`.
 - **Shell & Identidade Visual** — tokens do design "Aegean Marble", máquina de telas do menu (New City/Load/Settings), terreno procedural determinístico por preset, calendário Ano/Estação e saves `.polis` com metadados para a tela Load.
 - **Apresentação** — contratos de view + geração procedural de *placeholders* (polígonos coloridos isométricos).
 

@@ -17,7 +17,7 @@ namespace CityBuilder.Economy;
 /// </summary>
 public sealed class EconomySystem : IEconomySystem
 {
-    private const int CityAgentId = 0;
+    private const int CityAgentId = EconomicAgentIds.City;
 
     private readonly WorldMap _map;
     private readonly FlowNetwork _roads;
