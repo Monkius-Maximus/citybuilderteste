@@ -396,6 +396,7 @@ produzem o mesmo resultado).
 - [x] **Persistência & Replay** — save binário, log de comandos serializável, replay na mesma cadência, checksum de estado.
 - [x] **Shell & identidade visual** — tokens "Aegean Marble", máquina de telas, New City/Load/Settings, terreno procedural, calendário, save v2 c/ metadados.
 - [x] **Crescimento populacional & demanda RCI** — modelo de demanda dirige o crescimento; setores circulam dinheiro via `EconomicAgent`/`Ledger`.
+- [ ] **Gerenciamento de cidades** (biblioteca CRUD, autosave, seeds/founding codes, import/export, thumbnails) — **plano aprovável em [`docs/plans/city-management.md`](plans/city-management.md)**.
 - [ ] **HUD in-game** (fase 2 do design — o handoff marca o ponto de entrega no stub in-game).
-- [ ] **Multiplayer lockstep** sobre o fluxo de comandos (codec/replay/checksum já são os blocos de construção).
+- Multiplayer lockstep: **despriorizado** por decisão de produto; codec/replay/checksum permanecem como infraestrutura de replay/verificação.
 - [ ] Remoção estrutural completa em `FlowNetwork` (reciclagem de nós/arestas interiores).
