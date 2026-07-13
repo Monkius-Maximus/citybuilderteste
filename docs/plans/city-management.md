@@ -200,21 +200,28 @@ contexto conforme a nota do próprio handoff.
 
 | Fase | Conteúdo | Critério de aceite (demo headless) |
 |---|---|---|
-| **M1 — Biblioteca** | `CityLibrary` CRUD + escrita atômica + `.trash/` + `AutosaveService` + fachada `SaveCatalog` | criar 3 cidades → listar → renomear → duplicar → excluir → lixeira; autosave rotaciona 3 slots |
+| **M1 — Biblioteca** ✅ | `CityLibrary` CRUD + escrita atômica + `.trash/` + `AutosaveService` (5 slots) + fachada `SaveCatalog` + rename in-place (`SaveGame.RewriteCityName`, sem carregar o mundo) | criar cidades → listar → renomear → duplicar → excluir → lixeira; autosave dispara 7× e mantém 5 slots (mais antigo sobrescrito); reload via biblioteca bate checksum |
 | **M2 — Portabilidade** | `FoundingCode` + `CityPackage` + verbos CLI no App | export → corromper 1 byte → import recusa por checksum; código de fundação re-gera mundo bit-idêntico (censo igual) |
 | **M3 — Polimento** | `ThumbnailRenderer` + save v3 + leitor v2/v3 | save v3 carrega thumb; save v2 antigo ainda abre; thumbnail bate com censo do terreno |
 | **M4 — Shell** | eventos de rename/delete/export/import no `GameShell` + fluxo completo no demo | demo percorre: fundar → autosave → exportar → importar → listar com thumbs |
 
 Sem dependências externas novas em nenhuma fase; tudo `netstandard2.1` + IO já usado.
 
-## 6. Decisões em aberto (respostas suas destravam M1)
+## 6. Decisões (fechadas com o product owner em 2026-07)
 
-1. **Lixeira:** mover para `.trash/` (proposto) ou apagar direto com confirmação na UI?
-2. **Rotação de autosave:** 3 slots é bom padrão? (TheoTown usa 1–3; SC4 um único "auto").
-3. **Founding code:** forma legível (`POLIS-T128-VP-314159`), compacta (base32), ou as duas?
-4. **Thumbnail:** 64×44 (proporção do glifo do design) está bom, ou prefere maior (96×66)?
-5. **Extensão do pacote:** `.polispack` dedicado (proposto) ou exportar o próprio `.polis`?
-   (Dedicado permite manifesto/checksum sem inflar todo save do dia a dia.)
+1. **Lixeira:** ✅ `.trash/` — o save é preservado antes da exclusão, protegendo contra clique
+   acidental. *(Implementado na M1.)*
+2. **Rotação de autosave:** ✅ **5 slots** (pedido: "pelo menos 5"). *(Implementado na M1;
+   parâmetro `rotationSlots` permite subir.)*
+3. **Founding code:** ✅ **ambos** os formatos (legível + compacto base32). *(M2.)*
+4. **Thumbnail:** ✅ 64×44 aprovado. *(M3.)*
+5. **Extensão do pacote:** ✅ `.polispack` dedicado. Diferença explicada: o `.polis` é o save
+   de trabalho que o jogo lê/grava o tempo todo; o `.polispack` é o **envelope de exportação** —
+   os mesmos bytes do `.polis` embrulhados com um manifesto (versão do save, versão do jogo,
+   cópia dos metadados) e um **checksum do conteúdo**. Isso permite ao import verificar
+   integridade e compatibilidade **antes** de tocar a biblioteca e dar mensagens exatas
+   ("arquivo corrompido no download", "save de versão mais nova"), sem inflar os saves do dia
+   a dia com dados redundantes. *(M2.)*
 
 ## 7. Riscos & mitigação
 

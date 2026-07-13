@@ -7,6 +7,7 @@ using CityBuilder.Ecs.Components;
 using CityBuilder.Economy;
 using CityBuilder.Events.Notifications;
 using CityBuilder.Grid;
+using CityBuilder.Library;
 using CityBuilder.Networks;
 using CityBuilder.Pathfinding;
 using CityBuilder.Persistence;
@@ -240,29 +241,54 @@ novaPolis.Submit(new ZoneAreaCommand(new GridCoord(44, 44), new GridCoord(64, 64
 for (int i = 0; i < 300; i++) novaPolis.Step();
 Console.WriteLine($"  after 300 ticks: population~{ZoningStats.Population(novaPolis.Map.Zoning)}, treasury {novaPolis.Economy.Balance}, {GameCalendar.Describe(novaPolis.CurrentTick)}");
 
-// Save two cities and list them the way the Load City screen does.
+// --- City Library (M1): save through the manager, then the full CRUD lifecycle ---
+Console.WriteLine("\n-- City Library: save / list / rename / duplicate / delete / autosave --");
 string savesDir = Path.Combine(Path.GetTempPath(), "polis-saves");
-Directory.CreateDirectory(savesDir);
-using (FileStream f = File.Create(Path.Combine(savesDir, "nova-polis" + SaveCatalog.Extension)))
+if (Directory.Exists(savesDir))
 {
-    SaveGame.Write(novaPolis, f);
+    Directory.Delete(savesDir, recursive: true); // fresh demo run, deterministic listing
 }
+
+var library = new CityLibrary(savesDir);
+int libraryChanges = 0;
+library.LibraryChanged += () => libraryChanges++;
+
+CitySlot novaSlot = library.Save(novaPolis);
 
 var portoVerde = new GameSimulation(new GameConfig(64, 64, 271828, 10, "Porto Verde", TerrainPreset.CoastalReach));
 portoVerde.Definitions.LoadFrom(DemoDefinitions());
 TerrainGenerator.Generate(portoVerde.Map.Terrain, 271828, TerrainPreset.CoastalReach);
 for (int i = 0; i < 120; i++) portoVerde.Step();
-using (FileStream f = File.Create(Path.Combine(savesDir, "porto-verde" + SaveCatalog.Extension)))
-{
-    SaveGame.Write(portoVerde, f);
-}
+CitySlot portoSlot = library.Save(portoVerde);
+Console.WriteLine($"  saved '{novaSlot.CityName}' -> {novaSlot.FileName} and '{portoSlot.CityName}' -> {portoSlot.FileName}");
+Console.WriteLine($"  SaveCatalog façade sees {SaveCatalog.Scan(savesDir).Count} save(s)");
 
-Console.WriteLine("  Load City:");
-DateTime nowUtc = DateTime.UtcNow;
-foreach (SaveSlot slot in SaveCatalog.Scan(savesDir))
+PrintLibrary("after saving 2 cities", library);
+
+// Rename rewrites the name inside the save WITHOUT loading the world or renaming the file.
+CitySlot renamed = library.Rename(novaSlot, "Nova Polis Prime");
+Console.WriteLine($"  renamed: '{renamed.CityName}' (file kept: {renamed.FileName})");
+
+// Duplicate + delete: the copy goes to .trash/, recoverable against accidental clicks.
+CitySlot copy = library.Duplicate(renamed, "Nova Polis II");
+library.Delete(copy);
+Console.WriteLine($"  duplicated + deleted: trash now holds {library.TrashContents().Count} file(s)");
+
+// Loading through the library = same rebuild rule (bootstrap first, then restore).
+GameSimulation reloadedCity = library.Load(renamed, s => s.Definitions.LoadFrom(DemoDefinitions()));
+Console.WriteLine($"  reloaded '{reloadedCity.Config.CityName}': tick={reloadedCity.CurrentTick}, checksum match={StateChecksum.Compute(reloadedCity) == StateChecksum.Compute(novaPolis)}");
+
+// Autosave: 5-slot rotation driven by the Settings interval (we control elapsed time here).
+var autosaver = new AutosaveService(library, shell.Settings, rotationSlots: 5);
+for (int i = 0; i < 7; i++)
 {
-    Console.WriteLine($"    {slot.Metadata.CityName,-12} {slot.Metadata.Describe(),-52} {RelativeTime.Describe(slot.Metadata.SavedAtUtc, nowUtc)}   [LOAD]");
+    autosaver.Update(novaPolis, TimeSpan.FromMinutes(11)); // > Every10Min default => fires each call
 }
+IReadOnlyList<CitySlot> autosaves = autosaver.SlotsFor(novaPolis);
+Console.WriteLine($"  autosave: 7 fired -> {autosaves.Count} slots kept (oldest overwritten), e.g. {autosaves[0].FileName}");
+Console.WriteLine($"  library change events observed: {libraryChanges}");
+
+PrintLibrary("final Load City screen", library);
 
 // Settings screen semantics: BACK discards, APPLY commits; then a persistence round-trip.
 shell.ExitToTitle();
@@ -297,6 +323,18 @@ return;
 static InMemoryDefinitionSource DemoDefinitions() => new InMemoryDefinitionSource()
     .Add(new BuildingDefinition { Id = "Residential_Standard_L1", DisplayName = "Standard Housing", Category = ZoneType.Residential, MaxOccupancy = 24 })
     .Add(new VehicleDefinition { Id = "CompactHatch_Tier1", DisplayName = "Compact Hatchback", Class = VehicleClass.Passenger, MaxSpeed = 3f, Capacity = 4 });
+
+// Render the library the way the Load City screen presents it (badge on autosaves).
+static void PrintLibrary(string label, CityLibrary library)
+{
+    Console.WriteLine($"  {label}:");
+    DateTime nowUtc = DateTime.UtcNow;
+    foreach (CitySlot slot in library.Refresh())
+    {
+        string badge = slot.IsAutosave ? " [AUTO]" : "";
+        Console.WriteLine($"    {slot.CityName,-18} {slot.Metadata.Describe(),-50} {RelativeTime.Describe(slot.Metadata.SavedAtUtc, nowUtc)}   [LOAD]{badge}");
+    }
+}
 
 // Tile-kind counts for a quick look at what a terrain preset produced.
 static string TerrainCensus(GameSimulation sim)

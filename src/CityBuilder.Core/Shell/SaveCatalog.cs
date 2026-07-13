@@ -1,58 +1,19 @@
-using CityBuilder.Persistence;
+using CityBuilder.Library;
 
 namespace CityBuilder.Shell;
 
-/// <summary>A save file surfaced on the Load City screen: where it lives + its display metadata.</summary>
-public readonly struct SaveSlot
-{
-    public readonly string FilePath;
-    public readonly SaveMetadata Metadata;
-
-    public SaveSlot(string filePath, SaveMetadata metadata)
-    {
-        FilePath = filePath;
-        Metadata = metadata;
-    }
-}
-
 /// <summary>
-/// Backs the Load City screen: scans a saves directory, reads each file's metadata block (never
-/// the world state) and returns rows sorted most-recent first — the exact order the design shows.
-/// Unreadable/corrupt files are skipped rather than crashing the menu.
+/// Thin façade kept for the Load City screen: scanning now lives in
+/// <see cref="CityLibrary"/> (the full CRUD manager); this just exposes the read path with the
+/// same one-call shape it always had. Rows come back manual-saves-first, most recent first.
 /// </summary>
 public static class SaveCatalog
 {
     /// <summary>Save-file extension for THE GAME OF POLIS.</summary>
-    public const string Extension = ".polis";
+    public const string Extension = CityLibrary.SaveExtension;
 
-    public static List<SaveSlot> Scan(string directory)
-    {
-        var slots = new List<SaveSlot>();
-        if (!Directory.Exists(directory))
-        {
-            return slots;
-        }
-
-        foreach (string path in Directory.GetFiles(directory, "*" + Extension))
-        {
-            try
-            {
-                using FileStream stream = File.OpenRead(path);
-                slots.Add(new SaveSlot(path, SaveGame.ReadMetadata(stream)));
-            }
-            catch (IOException)
-            {
-                // Locked/unreadable file: leave it off the list.
-            }
-            catch (InvalidDataException)
-            {
-                // Not a valid save (wrong magic/version): skip silently.
-            }
-        }
-
-        slots.Sort(static (a, b) => b.Metadata.SavedAtUtc.CompareTo(a.Metadata.SavedAtUtc));
-        return slots;
-    }
+    public static IReadOnlyList<CitySlot> Scan(string directory)
+        => new CityLibrary(directory).Refresh();
 }
 
 /// <summary>

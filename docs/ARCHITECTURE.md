@@ -113,11 +113,15 @@ citybuilderteste/
     │   │   ├── IProceduralSpriteFactory.cs / PlaceholderSpriteFactory.cs
     │   │   └── AegeanMarbleTheme.cs            # tokens da identidade visual aprovada (1a)
     │   ├── Shell/                        # Fluxo pré-jogo (menus) — view-models engine-agnostic
-    │   │   ├── GameShell.cs                    # máquina de telas Title/New/Load/Settings/InGame
+    │   │   ├── GameShell.cs                    # máquina de telas + eventos (incl. rename/delete)
     │   │   ├── NewCityForm.cs                  # "Found a New City" (nome/tamanho/seed/terreno)
     │   │   ├── GameSettings.cs                 # Settings c/ BACK-descarta / APPLY-comita + persistência
-    │   │   ├── SaveCatalog.cs                  # lista de saves p/ "Load City" + tempo relativo
+    │   │   ├── SaveCatalog.cs                  # fachada de leitura (delega à CityLibrary) + tempo relativo
     │   │   └── GameInfo.cs                     # marca/copy: THE GAME OF POLIS, §, rodapé
+    │   ├── Library/                      # Gerenciamento de cidades (plano city-management, M1)
+    │   │   ├── CitySlot.cs                     # entrada da biblioteca (caminho+metadados+flag auto)
+    │   │   ├── CityLibrary.cs                  # CRUD: save atômico, rename in-place, duplicar, lixeira
+    │   │   └── AutosaveService.cs              # rotação de 5 slots dirigida pelo AutosaveInterval
     │   ├── ISimulationContext.cs         # superfície de acesso p/ comandos e sistemas
     │   ├── GameConfig.cs
     │   └── GameSimulation.cs             # COMPOSITION ROOT (liga tudo, dirige os ticks)
@@ -396,7 +400,7 @@ produzem o mesmo resultado).
 - [x] **Persistência & Replay** — save binário, log de comandos serializável, replay na mesma cadência, checksum de estado.
 - [x] **Shell & identidade visual** — tokens "Aegean Marble", máquina de telas, New City/Load/Settings, terreno procedural, calendário, save v2 c/ metadados.
 - [x] **Crescimento populacional & demanda RCI** — modelo de demanda dirige o crescimento; setores circulam dinheiro via `EconomicAgent`/`Ledger`.
-- [ ] **Gerenciamento de cidades** (biblioteca CRUD, autosave, seeds/founding codes, import/export, thumbnails) — **plano aprovável em [`docs/plans/city-management.md`](plans/city-management.md)**.
+- [~] **Gerenciamento de cidades** — plano em [`docs/plans/city-management.md`](plans/city-management.md); **M1 entregue** (CityLibrary CRUD + escrita atômica + lixeira + autosave 5 slots). Próximas: M2 founding codes + `.polispack`, M3 thumbnails/save v3, M4 fiação completa no Shell.
 - [ ] **HUD in-game** (fase 2 do design — o handoff marca o ponto de entrega no stub in-game).
 - Multiplayer lockstep: **despriorizado** por decisão de produto; codec/replay/checksum permanecem como infraestrutura de replay/verificação.
 - [ ] Remoção estrutural completa em `FlowNetwork` (reciclagem de nós/arestas interiores).

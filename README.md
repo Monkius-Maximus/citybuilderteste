@@ -40,6 +40,7 @@ dotnet run --project src/CityBuilder.App
 - **Persistência & Replay** — save binário do estado persistente, log de comandos serializável e replay determinístico verificado por checksum (fundação do multiplayer lockstep).
 - **População & Demanda RCI** — modelo de demanda Residencial/Comercial/Industrial que dirige o crescimento das zonas (zonas → pessoas → demanda → crescimento), com setores (domicílios/comércio/indústria) circulando dinheiro via `EconomicAgent`/`Ledger`.
 - **Shell & Identidade Visual** — tokens do design "Aegean Marble", máquina de telas do menu (New City/Load/Settings), terreno procedural determinístico por preset, calendário Ano/Estação e saves `.polis` com metadados para a tela Load.
+- **Biblioteca de Cidades (M1)** — gerenciador CRUD estilo TheoTown/SC4: save atômico, renomear sem carregar o mundo, duplicar, lixeira `.trash/` não destrutiva e autosave com rotação de 5 slots ([plano completo](docs/plans/city-management.md)).
 - **Apresentação** — contratos de view + geração procedural de *placeholders* (polígonos coloridos isométricos).
 
 Detalhes completos, decisões de projeto e diretório comentado: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).

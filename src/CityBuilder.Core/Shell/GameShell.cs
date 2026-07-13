@@ -1,3 +1,5 @@
+using CityBuilder.Library;
+
 namespace CityBuilder.Shell;
 
 /// <summary>The pre-game screens, matching the prototype's state model (menu|new|load|settings|game).</summary>
@@ -33,7 +35,17 @@ public sealed class GameShell
     public event Action<GameConfig>? CityFounded;
 
     /// <summary>LOAD was clicked on a save row: the host restores the simulation from the slot.</summary>
-    public event Action<SaveSlot>? LoadRequested;
+    public event Action<CitySlot>? LoadRequested;
+
+    // Load City row context actions (the affordances the design handoff reserved). The shell
+    // only signals; the host owns the CityLibrary and performs the mutation.
+
+    public event Action<CitySlot>? RenameRequested;
+    public event Action<CitySlot>? DeleteRequested;
+
+    public void RequestRename(in CitySlot slot) => RenameRequested?.Invoke(slot);
+
+    public void RequestDelete(in CitySlot slot) => DeleteRequested?.Invoke(slot);
 
     public NewCityForm NewCity { get; }
 
@@ -84,7 +96,7 @@ public sealed class GameShell
     }
 
     /// <summary>LOAD on a Load City row.</summary>
-    public void LoadCity(SaveSlot slot)
+    public void LoadCity(in CitySlot slot)
     {
         Transition(ShellScreen.InGame);
         LoadRequested?.Invoke(slot);

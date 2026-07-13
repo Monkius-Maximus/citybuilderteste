@@ -344,6 +344,38 @@ public static class SaveGame
         }
     }
 
+    /// <summary>
+    /// Rewrite ONLY the city-name field of a save, streaming every other byte through verbatim —
+    /// renaming a city never loads the world and needs no definitions. The name sits at a
+    /// parseable position (header + fixed config prefix), so this stays valid as long as writes
+    /// and reads share this class.
+    /// </summary>
+    public static void RewriteCityName(byte[] saveBytes, Stream destination, string newCityName)
+    {
+        using var input = new MemoryStream(saveBytes, writable: false);
+        using var r = new BinaryReader(input, Encoding.UTF8, leaveOpen: true);
+
+        ReadHeader(r);
+
+        // Fixed-size config prefix before the name: width, height, seed, ticksPerSecond.
+        r.ReadInt32();
+        r.ReadInt32();
+        r.ReadUInt64();
+        r.ReadDouble();
+
+        long nameStart = input.Position;
+        r.ReadString(); // skip the old name
+        long afterName = input.Position;
+
+        destination.Write(saveBytes, 0, (int)nameStart);
+
+        using var w = new BinaryWriter(destination, Encoding.UTF8, leaveOpen: true);
+        w.Write(newCityName);
+        w.Flush();
+
+        destination.Write(saveBytes, (int)afterName, saveBytes.Length - (int)afterName);
+    }
+
     private static void ReadHeader(BinaryReader r)
     {
         byte[] magic = r.ReadBytes(4);
