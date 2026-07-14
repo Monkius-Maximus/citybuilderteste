@@ -201,7 +201,7 @@ contexto conforme a nota do próprio handoff.
 | Fase | Conteúdo | Critério de aceite (demo headless) |
 |---|---|---|
 | **M1 — Biblioteca** ✅ | `CityLibrary` CRUD + escrita atômica + `.trash/` + `AutosaveService` (5 slots) + fachada `SaveCatalog` + rename in-place (`SaveGame.RewriteCityName`, sem carregar o mundo) | criar cidades → listar → renomear → duplicar → excluir → lixeira; autosave dispara 7× e mantém 5 slots (mais antigo sobrescrito); reload via biblioteca bate checksum |
-| **M2 — Portabilidade** | `FoundingCode` + `CityPackage` + verbos CLI no App | export → corromper 1 byte → import recusa por checksum; código de fundação re-gera mundo bit-idêntico (censo igual) |
+| **M2 — Portabilidade** ✅ | `FoundingCode` (legível + base32, com verificação) + `CityPackage` (`.polispack` c/ manifesto+checksum, import seguro e sufixo em colisão) + verbos CLI `list/export/import` no App | export → corromper 1 byte → import recusa por checksum; código de fundação (ambos formatos) re-gera mundo bit-idêntico (censo igual); código mistypado é rejeitado |
 | **M3 — Polimento** | `ThumbnailRenderer` + save v3 + leitor v2/v3 | save v3 carrega thumb; save v2 antigo ainda abre; thumbnail bate com censo do terreno |
 | **M4 — Shell** | eventos de rename/delete/export/import no `GameShell` + fluxo completo no demo | demo percorre: fundar → autosave → exportar → importar → listar com thumbs |
 

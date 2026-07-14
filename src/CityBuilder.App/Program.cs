@@ -25,6 +25,14 @@ using CityBuilder.Zoning;
 //  pump GameSimulation.Update(dt) from its frame loop, observing the same events.
 // =============================================================================
 
+// City-management CLI (M2): `list | export <city> <out.polispack> | import <file>`.
+// Any argument switches from the demo to the tool; proves the library is engine-agnostic.
+if (args.Length > 0)
+{
+    RunCli(args);
+    return;
+}
+
 Console.WriteLine($"== {GameInfo.Kicker} {GameInfo.Title} — {GameInfo.Tagline} (headless) ==");
 Console.WriteLine(GameInfo.FooterLine(10) + "\n");
 
@@ -290,6 +298,41 @@ Console.WriteLine($"  library change events observed: {libraryChanges}");
 
 PrintLibrary("final Load City screen", library);
 
+// --- Founding codes (M2): shareable seeds in both formats, integrity-checked ---
+Console.WriteLine("\n-- Founding codes (shareable seeds) --");
+string readableCode = FoundingCode.EncodeReadable(foundedConfig);
+string compactCode = FoundingCode.EncodeCompact(foundedConfig);
+Console.WriteLine($"  readable: {readableCode}");
+Console.WriteLine($"  compact:  {compactCode}");
+
+FoundingCode.TryDecode(readableCode, out GameConfig fromReadable, out _);
+FoundingCode.TryDecode(compactCode, out GameConfig fromCompact, out _);
+
+// Bit-identical world regeneration: terrain census from the decoded config matches the original.
+string originalCensus = TerrainCensus(novaPolis);
+var regen = new GameSimulation(fromReadable);
+TerrainGenerator.Generate(regen.Map.Terrain, fromReadable.Seed, fromReadable.Terrain);
+Console.WriteLine($"  decoded readable -> T{fromReadable.Width} {fromReadable.Terrain} seed {fromReadable.Seed}; terrain matches original: {TerrainCensus(regen) == originalCensus}");
+Console.WriteLine($"  compact decodes to the same setup: {fromCompact.Seed == fromReadable.Seed && fromCompact.Terrain == fromReadable.Terrain && fromCompact.Width == fromReadable.Width}");
+
+bool mistypeRejected = !FoundingCode.TryDecode("POLIS-T128-VP-314159-ZZ", out _, out string? codeError);
+Console.WriteLine($"  mistyped code rejected: {mistypeRejected} ({codeError})");
+
+// --- City package (M2): portable .polispack with an integrity check ---
+Console.WriteLine("\n-- City package (.polispack) export / import --");
+var packStream = new MemoryStream();
+CityPackage.Export(renamed, packStream);
+byte[] packBytes = packStream.ToArray();
+Console.WriteLine($"  exported '{renamed.CityName}' -> {packBytes.Length} bytes");
+
+byte[] tampered = (byte[])packBytes.Clone();
+tampered[^1] ^= 0xFF; // flip a payload byte
+ImportResult badImport = CityPackage.Import(new MemoryStream(tampered), library);
+Console.WriteLine($"  tampered import: {badImport.Status} — {badImport.Message}");
+
+ImportResult goodImport = CityPackage.Import(new MemoryStream(packBytes), library);
+Console.WriteLine($"  clean import: {goodImport.Status} — {goodImport.Message} (name-collision suffix applied)");
+
 // Settings screen semantics: BACK discards, APPLY commits; then a persistence round-trip.
 shell.ExitToTitle();
 shell.OpenSettings();
@@ -323,6 +366,90 @@ return;
 static InMemoryDefinitionSource DemoDefinitions() => new InMemoryDefinitionSource()
     .Add(new BuildingDefinition { Id = "Residential_Standard_L1", DisplayName = "Standard Housing", Category = ZoneType.Residential, MaxOccupancy = 24 })
     .Add(new VehicleDefinition { Id = "CompactHatch_Tier1", DisplayName = "Compact Hatchback", Class = VehicleClass.Passenger, MaxSpeed = 3f, Capacity = 4 });
+
+// City-management command-line tool. Operates on a fixed library folder so `export`/`import`
+// are a real round-trip you can run across machines.
+static void RunCli(string[] args)
+{
+    string dir = Path.Combine(Path.GetTempPath(), "polis-cli");
+    var library = new CityLibrary(dir);
+    string verb = args[0].ToLowerInvariant();
+
+    switch (verb)
+    {
+        case "list":
+        {
+            IReadOnlyList<CitySlot> slots = library.Refresh();
+            if (slots.Count == 0)
+            {
+                Console.WriteLine($"No cities in {dir}");
+                break;
+            }
+
+            foreach (CitySlot slot in slots)
+            {
+                string badge = slot.IsAutosave ? " [AUTO]" : "";
+                Console.WriteLine($"{slot.CityName,-20} {slot.Metadata.Describe()}  ({slot.FileName}){badge}");
+            }
+
+            break;
+        }
+
+        case "export":
+        {
+            if (args.Length < 3)
+            {
+                Console.WriteLine("usage: export <city-name-or-file> <out.polispack>");
+                break;
+            }
+
+            CitySlot? match = FindSlot(library, args[1]);
+            if (match is null)
+            {
+                Console.WriteLine($"City not found: {args[1]}");
+                break;
+            }
+
+            using FileStream f = File.Create(args[2]);
+            CityPackage.Export(match.Value, f);
+            Console.WriteLine($"Exported '{match.Value.CityName}' -> {args[2]}");
+            break;
+        }
+
+        case "import":
+        {
+            if (args.Length < 2)
+            {
+                Console.WriteLine("usage: import <file.polispack>");
+                break;
+            }
+
+            using FileStream f = File.OpenRead(args[1]);
+            ImportResult result = CityPackage.Import(f, library);
+            Console.WriteLine($"{result.Status}: {result.Message}");
+            break;
+        }
+
+        default:
+            Console.WriteLine("verbs: list | export <city> <out.polispack> | import <file.polispack>");
+            break;
+    }
+}
+
+// Match a library slot by city name (case-insensitive) or exact file name.
+static CitySlot? FindSlot(CityLibrary library, string query)
+{
+    foreach (CitySlot slot in library.Refresh())
+    {
+        if (string.Equals(slot.CityName, query, StringComparison.OrdinalIgnoreCase)
+            || string.Equals(slot.FileName, query, StringComparison.OrdinalIgnoreCase))
+        {
+            return slot;
+        }
+    }
+
+    return null;
+}
 
 // Render the library the way the Load City screen presents it (badge on autosaves).
 static void PrintLibrary(string label, CityLibrary library)

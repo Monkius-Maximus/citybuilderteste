@@ -164,6 +164,29 @@ public sealed class CityLibrary
         return true;
     }
 
+    /// <summary>
+    /// Bring an external save (raw <c>.polis</c> bytes, e.g. unpacked from a <c>.polispack</c>)
+    /// into the library under a fresh, unique file. The bytes are validated as a real save first;
+    /// a new slug file is minted so an import never overwrites an existing city.
+    /// </summary>
+    public CitySlot ImportSaveBytes(byte[] saveBytes)
+    {
+        EnsureDirectory();
+
+        GameConfig config;
+        using (var ms = new MemoryStream(saveBytes, writable: false))
+        {
+            config = SaveGame.ReadConfig(ms); // throws InvalidDataException if not a save
+        }
+
+        string path = UniquePath(Path.Combine(Directory, MintFileName(config)));
+        WriteAtomic(path, destination => destination.Write(saveBytes, 0, saveBytes.Length));
+
+        CitySlot slot = ReadSlot(path);
+        LibraryChanged?.Invoke();
+        return slot;
+    }
+
     /// <summary>Files currently sitting in the trash (for a future "restore/empty trash" UI).</summary>
     public IReadOnlyList<string> TrashContents()
     {
