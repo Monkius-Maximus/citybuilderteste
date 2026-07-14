@@ -17,14 +17,32 @@ public readonly struct SaveMetadata
     public readonly long Tick;
     public readonly DateTime SavedAtUtc;
 
-    public SaveMetadata(GameConfig config, long population, Money treasury, long tick, DateTime savedAtUtc)
+    /// <summary>RGBA minimap (row-major, 4 bytes/pixel); empty for v2 saves that predate thumbnails.</summary>
+    public readonly byte[] Thumbnail;
+    public readonly int ThumbnailWidth;
+    public readonly int ThumbnailHeight;
+
+    public SaveMetadata(
+        GameConfig config,
+        long population,
+        Money treasury,
+        long tick,
+        DateTime savedAtUtc,
+        int thumbnailWidth = 0,
+        int thumbnailHeight = 0,
+        byte[]? thumbnail = null)
     {
         Config = config;
         Population = population;
         Treasury = treasury;
         Tick = tick;
         SavedAtUtc = savedAtUtc;
+        ThumbnailWidth = thumbnailWidth;
+        ThumbnailHeight = thumbnailHeight;
+        Thumbnail = thumbnail ?? Array.Empty<byte>();
     }
+
+    public bool HasThumbnail => Thumbnail.Length > 0 && ThumbnailWidth > 0 && ThumbnailHeight > 0;
 
     public string CityName => Config.CityName;
 

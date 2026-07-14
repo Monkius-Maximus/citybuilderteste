@@ -84,8 +84,8 @@ citybuilderteste/
     │   │   ├── ICommandRecorder.cs             # gancho de gravação do fluxo de comandos
     │   │   └── Actions/                        # BuildRoad, ZoneArea, Bulldoze, SetTaxRate
     │   ├── Persistence/                  # Save binário + Replay determinístico
-    │   │   ├── SaveGame.cs                     # snapshot v2: config+METADADOS+estado
-    │   │   ├── SaveMetadata.cs                 # cabeçalho barato p/ a tela Load City
+    │   │   ├── SaveGame.cs                     # snapshot v3: config+METADADOS(+thumb)+estado; lê v2..v3
+    │   │   ├── SaveMetadata.cs                 # cabeçalho barato p/ a tela Load City (+ thumbnail)
     │   │   ├── ReplayLog.cs                    # log (tick, ação) + ReplayRecorder
     │   │   ├── CommandCodec.cs                 # comandos <-> bytes (replay hoje, rede depois)
     │   │   ├── ReplayPlayer.cs                 # reaplica o log na mesma cadência
@@ -111,6 +111,7 @@ citybuilderteste/
     │   ├── Presentation/                 # Contratos de View (implementados pela engine)
     │   │   ├── IRenderer.cs / Color32.cs / TileVisual.cs
     │   │   ├── IProceduralSpriteFactory.cs / PlaceholderSpriteFactory.cs
+    │   │   ├── ThumbnailRenderer.cs           # minimapa RGBA do save (tela Load City)
     │   │   └── AegeanMarbleTheme.cs            # tokens da identidade visual aprovada (1a)
     │   ├── Shell/                        # Fluxo pré-jogo (menus) — view-models engine-agnostic
     │   │   ├── GameShell.cs                    # máquina de telas + eventos (incl. rename/delete)
@@ -402,7 +403,7 @@ produzem o mesmo resultado).
 - [x] **Persistência & Replay** — save binário, log de comandos serializável, replay na mesma cadência, checksum de estado.
 - [x] **Shell & identidade visual** — tokens "Aegean Marble", máquina de telas, New City/Load/Settings, terreno procedural, calendário, save v2 c/ metadados.
 - [x] **Crescimento populacional & demanda RCI** — modelo de demanda dirige o crescimento; setores circulam dinheiro via `EconomicAgent`/`Ledger`.
-- [~] **Gerenciamento de cidades** — plano em [`docs/plans/city-management.md`](plans/city-management.md); **M1+M2 entregues** (CityLibrary CRUD + escrita atômica + lixeira + autosave 5 slots; founding codes legível/base32 + pacote `.polispack` com integridade + CLI). Próximas: M3 thumbnails/save v3, M4 fiação completa no Shell.
+- [~] **Gerenciamento de cidades** — plano em [`docs/plans/city-management.md`](plans/city-management.md); **M1+M2+M3 entregues** (biblioteca CRUD + lixeira + autosave; founding codes + `.polispack`; thumbnails 64×44 + save v3 lendo v2..v3). Falta a M4: fiação completa no `GameShell` + fluxo end-to-end.
 - [ ] **HUD in-game** (fase 2 do design — o handoff marca o ponto de entrega no stub in-game).
 - Multiplayer lockstep: **despriorizado** por decisão de produto; codec/replay/checksum permanecem como infraestrutura de replay/verificação.
 - [ ] Remoção estrutural completa em `FlowNetwork` (reciclagem de nós/arestas interiores).

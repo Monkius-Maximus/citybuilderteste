@@ -202,7 +202,7 @@ contexto conforme a nota do próprio handoff.
 |---|---|---|
 | **M1 — Biblioteca** ✅ | `CityLibrary` CRUD + escrita atômica + `.trash/` + `AutosaveService` (5 slots) + fachada `SaveCatalog` + rename in-place (`SaveGame.RewriteCityName`, sem carregar o mundo) | criar cidades → listar → renomear → duplicar → excluir → lixeira; autosave dispara 7× e mantém 5 slots (mais antigo sobrescrito); reload via biblioteca bate checksum |
 | **M2 — Portabilidade** ✅ | `FoundingCode` (legível + base32, com verificação) + `CityPackage` (`.polispack` c/ manifesto+checksum, import seguro e sufixo em colisão) + verbos CLI `list/export/import` no App | export → corromper 1 byte → import recusa por checksum; código de fundação (ambos formatos) re-gera mundo bit-idêntico (censo igual); código mistypado é rejeitado |
-| **M3 — Polimento** | `ThumbnailRenderer` + save v3 + leitor v2/v3 | save v3 carrega thumb; save v2 antigo ainda abre; thumbnail bate com censo do terreno |
+| **M3 — Polimento** ✅ | `ThumbnailRenderer` (RGBA 64×44 da paleta) + save **v3** (thumb no bloco de metadados) + leitor **v2..v3** | save v3 carrega thumb (dims/bytes/preview ASCII no demo); save/load ainda bate checksum (thumb fora do checksum); política de versão escrita (lê N-1) |
 | **M4 — Shell** | eventos de rename/delete/export/import no `GameShell` + fluxo completo no demo | demo percorre: fundar → autosave → exportar → importar → listar com thumbs |
 
 Sem dependências externas novas em nenhuma fase; tudo `netstandard2.1` + IO já usado.

@@ -4,6 +4,7 @@ using CityBuilder.Ecs.Components;
 using CityBuilder.Economy;
 using CityBuilder.Grid;
 using CityBuilder.Networks;
+using CityBuilder.Presentation;
 using CityBuilder.Utilities;
 using CityBuilder.Zoning;
 
@@ -30,9 +31,12 @@ namespace CityBuilder.Persistence;
 public static class SaveGame
 {
     // v2: config carries city name + terrain preset, and a fast METADATA block (population,
-    // treasury, tick, saved-at) sits before the state so the Load City screen can list saves
-    // without deserialising whole worlds.
-    private const int Version = 2;
+    //     treasury, tick, saved-at) sits before the state so the Load City screen can list saves
+    //     without deserialising whole worlds.
+    // v3: the metadata block also carries a small RGBA thumbnail for the Load City minimap.
+    // Pre-1.0 policy: WRITE the current version, READ back to MinReadableVersion.
+    private const int Version = 3;
+    private const int MinReadableVersion = 2;
     private static readonly byte[] Magic = { (byte)'C', (byte)'B', (byte)'S', (byte)'V' };
 
     // Fixed enumeration orders so the byte stream never depends on dictionary ordering.
@@ -68,6 +72,13 @@ public static class SaveGame
         w.Write(sim.Economy.Balance.Units);
         w.Write(sim.CurrentTick);
         w.Write(DateTime.UtcNow.Ticks); // wall-clock label only — never used by the simulation
+
+        // v3: RGBA minimap thumbnail (display only; not part of the state checksum).
+        byte[] thumbnail = ThumbnailRenderer.Render(sim);
+        w.Write(ThumbnailRenderer.DefaultWidth);
+        w.Write(ThumbnailRenderer.DefaultHeight);
+        w.Write(thumbnail.Length);
+        w.Write(thumbnail);
 
         // Clock + RNG.
         w.Write(sim.CurrentTick);
@@ -196,7 +207,7 @@ public static class SaveGame
     public static SaveMetadata ReadMetadata(Stream stream)
     {
         using var r = new BinaryReader(stream, Encoding.UTF8, leaveOpen: true);
-        ReadHeader(r);
+        int version = ReadHeader(r);
         GameConfig config = ReadConfigBody(r);
 
         long population = r.ReadInt64();
@@ -204,7 +215,17 @@ public static class SaveGame
         long tick = r.ReadInt64();
         var savedAtUtc = new DateTime(r.ReadInt64(), DateTimeKind.Utc);
 
-        return new SaveMetadata(config, population, treasury, tick, savedAtUtc);
+        int thumbWidth = 0, thumbHeight = 0;
+        byte[] thumbnail = Array.Empty<byte>();
+        if (version >= 3)
+        {
+            thumbWidth = r.ReadInt32();
+            thumbHeight = r.ReadInt32();
+            int thumbLength = r.ReadInt32();
+            thumbnail = thumbLength > 0 ? r.ReadBytes(thumbLength) : Array.Empty<byte>();
+        }
+
+        return new SaveMetadata(config, population, treasury, tick, savedAtUtc, thumbWidth, thumbHeight, thumbnail);
     }
 
     /// <summary>
@@ -214,7 +235,7 @@ public static class SaveGame
     public static void ReadInto(GameSimulation sim, Stream stream)
     {
         using var r = new BinaryReader(stream, Encoding.UTF8, leaveOpen: true);
-        ReadHeader(r);
+        int version = ReadHeader(r);
         GameConfig config = ReadConfigBody(r);
 
         if (config.Width != sim.Config.Width || config.Height != sim.Config.Height || config.Seed != sim.Config.Seed)
@@ -228,6 +249,17 @@ public static class SaveGame
         r.ReadInt64(); // treasury units
         r.ReadInt64(); // tick
         r.ReadInt64(); // saved-at utc
+
+        if (version >= 3)
+        {
+            r.ReadInt32(); // thumb width
+            r.ReadInt32(); // thumb height
+            int thumbLength = r.ReadInt32();
+            if (thumbLength > 0)
+            {
+                r.ReadBytes(thumbLength); // advance past the display-only thumbnail
+            }
+        }
 
         // Clock + RNG.
         sim.Clock.Restore(r.ReadInt64());
@@ -376,7 +408,8 @@ public static class SaveGame
         destination.Write(saveBytes, (int)afterName, saveBytes.Length - (int)afterName);
     }
 
-    private static void ReadHeader(BinaryReader r)
+    /// <summary>Validate magic + version and return the version so readers can branch on it.</summary>
+    private static int ReadHeader(BinaryReader r)
     {
         byte[] magic = r.ReadBytes(4);
         if (magic.Length != 4 || magic[0] != Magic[0] || magic[1] != Magic[1] || magic[2] != Magic[2] || magic[3] != Magic[3])
@@ -385,10 +418,13 @@ public static class SaveGame
         }
 
         int version = r.ReadInt32();
-        if (version != Version)
+        if (version < MinReadableVersion || version > Version)
         {
-            throw new InvalidDataException($"Unsupported save version {version} (expected {Version}).");
+            throw new InvalidDataException(
+                $"Unsupported save version {version} (this game reads {MinReadableVersion}..{Version}).");
         }
+
+        return version;
     }
 
     private static GameConfig ReadConfigBody(BinaryReader r)

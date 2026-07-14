@@ -333,6 +333,17 @@ Console.WriteLine($"  tampered import: {badImport.Status} — {badImport.Message
 ImportResult goodImport = CityPackage.Import(new MemoryStream(packBytes), library);
 Console.WriteLine($"  clean import: {goodImport.Status} — {goodImport.Message} (name-collision suffix applied)");
 
+// --- Save thumbnails (M3, save v3): real minimaps stored in the save metadata ---
+Console.WriteLine("\n-- Save thumbnail (v3) --");
+SaveMetadata meta = renamed.Metadata;
+Console.WriteLine($"  '{meta.CityName}': thumbnail {meta.ThumbnailWidth}x{meta.ThumbnailHeight}, {meta.Thumbnail.Length} bytes, present={meta.HasThumbnail}");
+Console.WriteLine("  reader accepts save versions 2..3 (older saves load fine, just without a thumbnail)");
+if (meta.HasThumbnail)
+{
+    Console.WriteLine("  minimap preview (~ water · & forest · . grass · + built · # dense):");
+    PrintThumbnailAscii(meta.Thumbnail, meta.ThumbnailWidth, meta.ThumbnailHeight, cols: 56, rows: 12);
+}
+
 // Settings screen semantics: BACK discards, APPLY commits; then a persistence round-trip.
 shell.ExitToTitle();
 shell.OpenSettings();
@@ -449,6 +460,37 @@ static CitySlot? FindSlot(CityLibrary library, string query)
     }
 
     return null;
+}
+
+// Rough ASCII view of a stored RGBA thumbnail — proves it's a real minimap, headless.
+static void PrintThumbnailAscii(byte[] rgba, int width, int height, int cols, int rows)
+{
+    for (int ry = 0; ry < rows; ry++)
+    {
+        Console.Write("    ");
+        int py = ry * height / rows;
+        for (int cx = 0; cx < cols; cx++)
+        {
+            int px = cx * width / cols;
+            int i = (py * width + px) * 4;
+            int r = rgba[i], g = rgba[i + 1], b = rgba[i + 2];
+
+            char ch;
+            if (b > r + 30 && b > g + 30)
+            {
+                ch = '~'; // water-ish (blue dominant)
+            }
+            else
+            {
+                int brightness = (r + g + b) / 3;
+                ch = brightness < 90 ? '&' : brightness < 140 ? '.' : brightness < 190 ? '+' : '#';
+            }
+
+            Console.Write(ch);
+        }
+
+        Console.Write('\n');
+    }
 }
 
 // Render the library the way the Load City screen presents it (badge on autosaves).
