@@ -42,10 +42,21 @@ public sealed class GameShell
 
     public event Action<CitySlot>? RenameRequested;
     public event Action<CitySlot>? DeleteRequested;
+    public event Action<CitySlot>? ExportRequested;
+
+    /// <summary>CONTINUE was clicked: the host resolves and loads the most recent city.</summary>
+    public event Action? ContinueRequested;
+
+    /// <summary>Import button clicked: the host opens a file picker, then imports the package.</summary>
+    public event Action? ImportRequested;
 
     public void RequestRename(in CitySlot slot) => RenameRequested?.Invoke(slot);
 
     public void RequestDelete(in CitySlot slot) => DeleteRequested?.Invoke(slot);
+
+    public void RequestExport(in CitySlot slot) => ExportRequested?.Invoke(slot);
+
+    public void RequestImport() => ImportRequested?.Invoke();
 
     public NewCityForm NewCity { get; }
 
@@ -64,7 +75,11 @@ public sealed class GameShell
     }
 
     /// <summary>CONTINUE — straight into the most recent city (host resolves which).</summary>
-    public void Continue() => Transition(ShellScreen.InGame);
+    public void Continue()
+    {
+        Transition(ShellScreen.InGame);
+        ContinueRequested?.Invoke();
+    }
 
     // --- Modal actions ---
 

@@ -344,6 +344,58 @@ if (meta.HasThumbnail)
     PrintThumbnailAscii(meta.Thumbnail, meta.ThumbnailWidth, meta.ThumbnailHeight, cols: 56, rows: 12);
 }
 
+// --- M4: the whole pre-game flow driven through GameShell + GameHost (as a frontend would) ---
+Console.WriteLine("\n-- Pre-game flow via GameShell + GameHost (end to end) --");
+string hostDir = Path.Combine(Path.GetTempPath(), "polis-host");
+if (Directory.Exists(hostDir)) Directory.Delete(hostDir, recursive: true);
+
+var hostShell = new GameShell();
+var host = new GameHost(hostShell, new CityLibrary(hostDir), new GameSettings(), s => s.Definitions.LoadFrom(DemoDefinitions()));
+hostShell.ScreenChanged += s => Console.WriteLine($"  [shell] -> {s}");
+host.ActiveChanged += s => Console.WriteLine($"  [host] active city: '{s.Config.CityName}' ({s.Config.Width}x{s.Config.Height}, {s.Config.Terrain})");
+
+// Found a city entirely through the menu, then let the host loop drive real-time ticks.
+hostShell.OpenNewCity();
+hostShell.NewCity.CityName = "Aurelia";
+hostShell.NewCity.MapSize = MapSizePreset.Hamlet;
+hostShell.NewCity.SeedText = "2024";
+hostShell.NewCity.Terrain = TerrainPreset.Highlands;
+hostShell.FoundCity();                       // -> GameHost.NewCity: builds world + terrain, sets Active
+for (int i = 0; i < 20; i++) host.Tick(0.1); // 2s of frame time -> fixed ticks + autosave check
+host.SaveActive();
+Console.WriteLine($"  saved active -> '{host.ActiveSlot?.CityName}' ({host.ActiveSlot?.FileName})");
+
+// Found + save a second city, then LOAD the first back via the Load screen.
+hostShell.Back();
+hostShell.OpenNewCity();
+hostShell.NewCity.CityName = "Belport";
+hostShell.NewCity.MapSize = MapSizePreset.Hamlet;
+hostShell.NewCity.SeedText = "555";
+hostShell.NewCity.Terrain = TerrainPreset.CoastalReach;
+hostShell.FoundCity();
+host.SaveActive();
+
+hostShell.ExitToTitle();
+hostShell.OpenLoadCity();
+CitySlot aurelia = host.Library.Refresh().First(x => x.CityName == "Aurelia");
+hostShell.LoadCity(aurelia);                 // -> GameHost.LoadSlot: rebuilds Active from the save
+
+// Rename, duplicate, delete (to trash) and export -> import, all through the host.
+CitySlot renamedHost = host.RenameSlot(aurelia, "Aurelia Magna");
+CitySlot dup = host.DuplicateSlot(renamedHost, "Aurelia Copy");
+host.DeleteSlot(dup);
+var pkg = new MemoryStream();
+host.ExportSlot(renamedHost, pkg);
+pkg.Position = 0;
+ImportResult hostImport = host.ImportPackage(pkg);
+Console.WriteLine($"  rename/dup/delete/export/import -> import {hostImport.Status} as '{hostImport.Slot?.CityName}', trash holds {host.Library.TrashContents().Count}");
+
+Console.WriteLine("  final library:");
+foreach (CitySlot s in host.Library.Refresh())
+{
+    Console.WriteLine($"    {s.CityName,-22} {GameCalendar.Describe(s.Metadata.Tick),-16} thumb={s.Metadata.HasThumbnail}");
+}
+
 // Settings screen semantics: BACK discards, APPLY commits; then a persistence round-trip.
 shell.ExitToTitle();
 shell.OpenSettings();

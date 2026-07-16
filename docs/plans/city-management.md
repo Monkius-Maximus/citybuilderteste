@@ -1,6 +1,6 @@
 # Plano — Gerenciamento de Cidades: Biblioteca, Seeds, Import/Export
 
-> **Status:** proposta aprovável · **Escopo:** single-player · **Referências:** TheoTown (lista de
+> **Status:** ✅ **CONCLUÍDO** (M1–M4 entregues) · **Escopo:** single-player · **Referências:** TheoTown (lista de
 > cidades, arquivos portáteis, compartilhamento), SimCity 4 (identidade de cidade, re-fundação,
 > visão de região — esta última só como direção futura).
 >
@@ -203,7 +203,7 @@ contexto conforme a nota do próprio handoff.
 | **M1 — Biblioteca** ✅ | `CityLibrary` CRUD + escrita atômica + `.trash/` + `AutosaveService` (5 slots) + fachada `SaveCatalog` + rename in-place (`SaveGame.RewriteCityName`, sem carregar o mundo) | criar cidades → listar → renomear → duplicar → excluir → lixeira; autosave dispara 7× e mantém 5 slots (mais antigo sobrescrito); reload via biblioteca bate checksum |
 | **M2 — Portabilidade** ✅ | `FoundingCode` (legível + base32, com verificação) + `CityPackage` (`.polispack` c/ manifesto+checksum, import seguro e sufixo em colisão) + verbos CLI `list/export/import` no App | export → corromper 1 byte → import recusa por checksum; código de fundação (ambos formatos) re-gera mundo bit-idêntico (censo igual); código mistypado é rejeitado |
 | **M3 — Polimento** ✅ | `ThumbnailRenderer` (RGBA 64×44 da paleta) + save **v3** (thumb no bloco de metadados) + leitor **v2..v3** | save v3 carrega thumb (dims/bytes/preview ASCII no demo); save/load ainda bate checksum (thumb fora do checksum); política de versão escrita (lê N-1) |
-| **M4 — Shell** | eventos de rename/delete/export/import no `GameShell` + fluxo completo no demo | demo percorre: fundar → autosave → exportar → importar → listar com thumbs |
+| **M4 — Shell** ✅ | eventos `Continue/Rename/Delete/Export/Import` no `GameShell` + `GameHost` (controlador engine-agnostic ligando shell↔biblioteca↔ciclo da simulação) + fluxo completo no demo | demo percorre via shell+host: fundar (New City) → tick real → salvar → carregar → renomear → duplicar → excluir → exportar → importar → listar com thumbs |
 
 Sem dependências externas novas em nenhuma fase; tudo `netstandard2.1` + IO já usado.
 
