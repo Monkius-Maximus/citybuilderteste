@@ -22,7 +22,8 @@ estritamente genéricos de veículos/edifícios (ex.: `CompactHatch_Tier1`).
 ## Rodar
 
 ```bash
-dotnet run --project src/CityBuilder.App
+dotnet run --project src/CityBuilder.App     # demo headless (+ CLI: -- list|export|import)
+dotnet run --project src/CityBuilder.Tests   # suíte de testes (sem dependências; exit code = falhas)
 ```
 
 ## Sistemas incluídos nesta etapa

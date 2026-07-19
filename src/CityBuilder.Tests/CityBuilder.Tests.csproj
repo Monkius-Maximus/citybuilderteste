@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Dependency-free test project: a tiny reflection-based runner (no xUnit/NUnit, so it builds
+    and runs with `dotnet run` and zero NuGet restore, matching the core's no-dependency ethos).
+    Exit code is the failure count, so it works as a CI gate.
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>CityBuilder.Tests</RootNamespace>
+    <AssemblyName>CityBuilder.Tests</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\CityBuilder.Core\CityBuilder.Core.csproj" />
+  </ItemGroup>
+
+</Project>

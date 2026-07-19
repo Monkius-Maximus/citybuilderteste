@@ -371,8 +371,17 @@ Load City → Settings com BACK/APPLY + round-trip de persistência.
 ## Como rodar (headless)
 
 ```bash
-dotnet run --project src/CityBuilder.App
+dotnet run --project src/CityBuilder.App          # demo headless (+ CLI: -- list|export|import)
+dotnet run --project src/CityBuilder.Tests        # suíte de testes (exit code = nº de falhas)
 ```
+
+> **Testes.** `CityBuilder.Tests` é um runner por reflexão **sem dependências externas** (nada de
+> xUnit/NUnit → builda e roda sem `dotnet restore`), cobrindo os invariantes críticos:
+> determinismo (mesma semente ⇒ mesmo checksum), save/load e replay batendo checksum, save v3
+> com thumbnail, founding codes (round-trip + rejeição de código corrompido), biblioteca
+> (CRUD/lixeira/rotação de autosave), pacote `.polispack` (round-trip + rejeição por checksum +
+> sufixo de colisão), pathfinding (A* ótimo, congestionamento, flow field), projeção isométrica,
+> `Money`/calendário, e o modelo de demanda RCI (imposto reduz demanda; setores conservam dinheiro).
 
 O programa exercita, sem nenhuma engine: pub/sub de eventos, comandos (zonear, construir
 estrada, imposto) com undo/redo, ticks fixos determinísticos, crescimento por autômato
