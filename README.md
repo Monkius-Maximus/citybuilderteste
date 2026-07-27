@@ -8,6 +8,7 @@ foi pensada para portabilidade futura para **Unity** ou **Godot**.
 Identidade visual aprovada: **"Aegean Marble"** — handoff completo em
 [`docs/design/main-menu/`](docs/design/main-menu/README.md), tokens integrados ao core em
 `Presentation/AegeanMarbleTheme` e fluxo de menus em `Shell/`.
+Especificação de produção de arte/áudio: [`docs/design/asset-list.md`](docs/design/asset-list.md).
 
 Implementação **clean-room** (nada derivado de código GPL/proprietário) e com metadados
 estritamente genéricos de veículos/edifícios (ex.: `CompactHatch_Tier1`).
