@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Plano Diretor — Backlog de Sprints · Rev. 4</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@300;500;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --film:#E3E6E0;
+  --panel:#F2F3EF;
+  --ink:#17252A;
+  --ink-soft:#5C6B6E;
+  --rule:#B9C0BA;
+  --done:#3F6B4A;
+  --doing:#B5772A;
+  --blocked:#9E3630;
+  --open:#2F5E80;
+  --water:#417C93;
+  --sp:clamp(16px,4vw,28px);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--film);
+  color:var(--ink);
+  font-family:"IBM Plex Sans",system-ui,sans-serif;
+  font-size:15px;line-height:1.55;
+  background-image:
+    linear-gradient(rgba(23,37,42,.045) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(23,37,42,.045) 1px,transparent 1px);
+  background-size:32px 32px;
+}
+.sheet{max-width:1000px;margin:0 auto;padding:var(--sp)}
+
+/* hachura = estado, como legenda de plano de zoneamento */
+.hatch{display:block;width:100%;height:100%}
+.h-done{background:repeating-linear-gradient(45deg,var(--done) 0 3px,transparent 3px 8px),rgba(63,107,74,.10)}
+.h-doing{background:repeating-linear-gradient(-45deg,var(--doing) 0 3px,transparent 3px 8px),rgba(181,119,42,.10)}
+.h-open{background:repeating-linear-gradient(90deg,var(--open) 0 2px,transparent 2px 9px),rgba(47,94,128,.08)}
+.h-blocked{background:repeating-linear-gradient(45deg,var(--blocked) 0 4px,transparent 4px 7px),rgba(158,54,48,.14)}
+
+.masthead{border-bottom:2px solid var(--ink);padding-bottom:14px;margin-bottom:26px}
+.eyebrow{
+  font-family:"IBM Plex Mono",monospace;font-size:11px;font-weight:600;
+  letter-spacing:.22em;text-transform:uppercase;color:var(--ink-soft);
+  display:flex;flex-wrap:wrap;gap:6px 18px;margin-bottom:10px;
+}
+.title{
+  font-family:"Oswald",sans-serif;font-weight:700;
+  font-size:clamp(32px,8vw,64px);line-height:.94;
+  letter-spacing:-.01em;text-transform:uppercase;margin:0;
+}
+.subtitle{font-size:15px;color:var(--ink-soft);max-width:62ch;margin:12px 0 0}
+.revnote{
+  font-family:"IBM Plex Mono",monospace;font-size:11.5px;color:var(--doing);
+  border-left:3px solid var(--doing);padding-left:10px;margin:16px 0 0;max-width:62ch;
+}
+
+.scalebar{margin-top:20px}
+.scalebar-track{display:flex;height:13px;border:1px solid var(--ink);width:min(340px,100%)}
+.scalebar-track i{flex:1;border-right:1px solid var(--ink)}
+.scalebar-track i:last-child{border-right:0}
+.scalebar-track i:nth-child(odd){background:var(--ink)}
+.scalebar-ticks{
+  display:flex;justify-content:space-between;width:min(340px,100%);
+  font-family:"IBM Plex Mono",monospace;font-size:10px;color:var(--ink-soft);
+  margin-top:4px;letter-spacing:.06em;
+}
+.scalebar-note{
+  font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--ink-soft);
+  margin-top:7px;letter-spacing:.04em;
+}
+
+.block{margin:0 0 30px}
+.block-head{
+  display:flex;align-items:baseline;gap:12px;
+  border-bottom:1px solid var(--rule);padding-bottom:6px;margin-bottom:14px;
+}
+.block-head h2{
+  font-family:"Oswald",sans-serif;font-weight:500;text-transform:uppercase;
+  letter-spacing:.09em;font-size:16px;margin:0;
+}
+.block-head span{
+  font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--ink-soft);
+  margin-left:auto;letter-spacing:.05em;
+}
+
+.legend{display:grid;grid-template-columns:repeat(auto-fit,minmax(148px,1fr));gap:10px}
+.legend-item{display:flex;align-items:center;gap:9px}
+.legend-swatch{width:34px;height:20px;border:1px solid var(--ink);flex:none}
+.legend-item b{font-family:"IBM Plex Mono",monospace;font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase}
+
+.alert{
+  border:2px solid var(--blocked);background:var(--panel);
+  padding:16px 18px;display:flex;gap:14px;align-items:flex-start;
+}
+.alert-mark{
+  font-family:"Oswald",sans-serif;font-weight:700;font-size:28px;line-height:1;
+  color:var(--blocked);flex:none;
+}
+.alert-clear{border-color:var(--done)}
+.alert-clear .alert-mark,.alert-clear h3{color:var(--done)}
+.alert h3{
+  font-family:"Oswald",sans-serif;font-weight:500;text-transform:uppercase;
+  letter-spacing:.08em;font-size:15px;margin:0 0 6px;color:var(--blocked);
+}
+.alert p{margin:0 0 8px;font-size:14px}
+.alert p:last-child{margin-bottom:0}
+
+/* camadas — onde este projeto se encaixa */
+.layers{display:grid;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:9px}
+.layer{border:1px solid var(--rule);background:var(--panel);padding:12px 14px}
+.layer.is-this{border:2px solid var(--ink);background:var(--film)}
+.layer b{
+  display:block;font-family:"Oswald",sans-serif;font-size:15px;font-weight:500;
+  text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px;
+}
+.layer em{
+  display:block;font-family:"IBM Plex Mono",monospace;font-size:10.5px;
+  font-style:normal;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--ink-soft);margin-bottom:7px;
+}
+.layer span{font-size:13px;color:var(--ink-soft)}
+.layer.is-this em{color:var(--done)}
+
+.progress{display:flex;height:26px;border:1px solid var(--ink);overflow:hidden}
+.progress-legend{
+  display:flex;flex-wrap:wrap;gap:6px 16px;margin-top:8px;
+  font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--ink-soft);
+}
+
+.sprint{
+  display:grid;grid-template-columns:52px 1fr;
+  border:1px solid var(--rule);border-bottom:0;background:var(--panel);
+}
+.sprint:last-of-type{border-bottom:1px solid var(--rule)}
+.sprint-id{
+  border-right:1px solid var(--rule);position:relative;
+  display:flex;align-items:center;justify-content:center;
+}
+.sprint-id .hatch{position:absolute;inset:0}
+.sprint-id b{
+  position:relative;font-family:"Oswald",sans-serif;font-weight:700;font-size:22px;
+  background:var(--panel);padding:2px 6px;border:1px solid var(--ink);
+}
+.sprint-body{padding:13px 15px}
+.sprint-title{
+  font-family:"Oswald",sans-serif;font-weight:500;font-size:17px;
+  text-transform:uppercase;letter-spacing:.05em;margin:0 0 3px;
+}
+.sprint-goal{font-size:13.5px;color:var(--ink-soft);margin:0 0 9px}
+.mods{display:flex;flex-wrap:wrap;gap:5px}
+.mods code{
+  font-family:"IBM Plex Mono",monospace;font-size:11px;
+  border:1px solid var(--rule);padding:2px 6px;background:var(--film);
+}
+.gate{
+  margin-top:9px;font-family:"IBM Plex Mono",monospace;font-size:11px;
+  color:var(--ink-soft);border-left:2px solid var(--rule);padding-left:9px;
+}
+.gate b{color:var(--ink);font-weight:600}
+
+.shipped{display:grid;gap:8px}
+.shipped-row{
+  display:flex;gap:11px;align-items:flex-start;
+  border:1px solid var(--rule);background:var(--panel);padding:11px 13px;
+}
+.shipped-row .mark{flex:none;font-family:"IBM Plex Mono",monospace;font-weight:700}
+.m-ok{color:var(--done)}
+.m-port{color:var(--doing)}
+.shipped-row code{font-family:"IBM Plex Mono",monospace;font-size:12.5px;font-weight:600}
+.shipped-row p{margin:3px 0 0;font-size:13px;color:var(--ink-soft)}
+
+/* export — assinatura de camadas */
+.export{border:1px solid var(--ink);background:var(--panel);padding:0}
+.export-row{
+  display:grid;grid-template-columns:150px 1fr;gap:0;
+  border-bottom:1px solid var(--rule);
+}
+.export-row:last-child{border-bottom:0}
+.export-row code{
+  font-family:"IBM Plex Mono",monospace;font-size:12px;font-weight:600;
+  padding:9px 12px;border-right:1px solid var(--rule);background:var(--film);
+}
+.export-row span{padding:9px 12px;font-size:13px;color:var(--ink-soft)}
+
+.decisions{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:9px}
+.dec{border:1px solid var(--rule);background:var(--panel);padding:11px 13px;border-left:3px solid var(--done)}
+.dec.is-new{border-left-color:var(--doing)}
+.dec b{display:block;font-family:"IBM Plex Mono",monospace;font-size:11.5px;font-weight:600;margin-bottom:4px}
+.dec span{font-size:13px;color:var(--ink-soft)}
+
+.pending{width:100%;border-collapse:collapse;font-size:13.5px}
+.pending th{
+  text-align:left;font-family:"IBM Plex Mono",monospace;font-size:10.5px;
+  text-transform:uppercase;letter-spacing:.12em;color:var(--ink-soft);
+  border-bottom:1px solid var(--ink);padding:0 10px 6px 0;font-weight:600;
+}
+.pending td{border-bottom:1px solid var(--rule);padding:9px 10px 9px 0;vertical-align:top}
+.pending tr:last-child td{border-bottom:0}
+.tag{
+  font-family:"IBM Plex Mono",monospace;font-size:10px;font-weight:600;
+  letter-spacing:.08em;text-transform:uppercase;padding:2px 6px;
+  border:1px solid currentColor;white-space:nowrap;
+}
+.t-block{color:var(--blocked)}
+.t-found{color:var(--open)}
+.t-model{color:var(--water)}
+.t-defer{color:var(--ink-soft)}
+
+.risk{border:1px dashed var(--blocked);padding:14px 16px;background:var(--panel)}
+.risk h3{font-family:"Oswald",sans-serif;font-weight:500;text-transform:uppercase;letter-spacing:.07em;font-size:14px;margin:0 0 8px}
+.risk p{margin:0 0 8px;font-size:13.5px}
+.risk p:last-child{margin-bottom:0}
+.risk code{font-family:"IBM Plex Mono",monospace;font-size:12.5px;background:var(--film);padding:1px 4px}
+
+footer{
+  border-top:2px solid var(--ink);margin-top:34px;padding-top:12px;
+  font-family:"IBM Plex Mono",monospace;font-size:10.5px;
+  color:var(--ink-soft);letter-spacing:.08em;text-transform:uppercase;
+}
+@media (max-width:560px){
+  .sprint{grid-template-columns:40px 1fr}
+  .sprint-id b{font-size:17px;padding:1px 4px}
+  .export-row{grid-template-columns:1fr}
+  .export-row code{border-right:0;border-bottom:1px solid var(--rule)}
+}
+</style>
+</head>
+<body>
+<div class="sheet">
+
+  <header class="masthead">
+    <div class="eyebrow">
+      <span>Plano diretor</span><span>Rev. 4</span><span>2026-09-17</span><span>MVP de autoria</span>
+    </div>
+    <h1 class="title">Editor de<br>Cidades</h1>
+    <p class="subtitle">Ferramenta de autoria de mapas em escala métrica, com export em camadas para alimentar outros projetos. O jogo é um consumidor possível, construído depois — não o produto.</p>
+
+    <p class="revnote">Mudou desde a rev. 3: auditoria de proveniência. Afirmações não verificadas sobre codebases de terceiros saíram dos documentos, e a guarda de exaustividade de comandos foi corrigida — <code>TreatWarningsAsErrors</code> não garante o que se supunha. Nenhuma decisão de arquitetura mudou.</p>
+
+    <div class="scalebar" aria-hidden="true">
+      <div class="scalebar-track"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+      <div class="scalebar-ticks"><span>0</span><span>16 m</span><span>32 m</span><span>48 m</span><span>64 m</span></div>
+      <p class="scalebar-note">Escala travada · metersPerTile = 8 · uma casa ≈ 1 célula</p>
+    </div>
+  </header>
+
+  <section class="block">
+    <div class="block-head"><h2>Onde este projeto se encaixa</h2><span>três camadas, sem sobreposição</span></div>
+    <div class="layers">
+      <div class="layer">
+        <b>City-searcher-tool</b><em>Camada de dados</em>
+        <span>Gazetteer, dossiês e arquétipos de cidades brasileiras.</span>
+      </div>
+      <div class="layer">
+        <b>Ferramenta de Mundo</b><em>Camada de entidades</em>
+        <span>Clubes, elencos, geografia competitiva.</span>
+      </div>
+      <div class="layer is-this">
+        <b>Editor de Cidades</b><em>Camada de geometria ← aqui</em>
+        <span>Terreno, hidrografia, vias, zonas e volumes — tudo em metros. Nenhuma das outras duas modela isto.</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="block-head"><h2>Legenda</h2><span>hachura = estado</span></div>
+    <div class="legend">
+      <div class="legend-item"><span class="legend-swatch"><span class="hatch h-done"></span></span><b>Entregue</b></div>
+      <div class="legend-item"><span class="legend-swatch"><span class="hatch h-doing"></span></span><b>Parcial</b></div>
+      <div class="legend-item"><span class="legend-swatch"><span class="hatch h-open"></span></span><b>Não iniciado</b></div>
+      <div class="legend-item"><span class="legend-swatch"><span class="hatch h-blocked"></span></span><b>Bloqueado</b></div>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="alert alert-clear">
+      <div class="alert-mark">✓</div>
+      <div>
+        <h3>Sem bloqueio ativo</h3>
+        <p>A licença caiu na rev. 2: não se lê o código-fonte de referência, só documentação e comportamento observado.</p>
+        <p><b>&ldquo;2D ou 3D&rdquo; caiu na rev. 3.</b> Eram duas perguntas empilhadas. O ADR-002 dissolveu a maior: o export não precisa escolher — geometria métrica mais PNG pré-renderizado atende 2D e 3D ao mesmo tempo.</p>
+        <p>Resta só decidir se o <b>editor</b> desenha em 3D ou 2D isométrico. Reversível, não trava o Sprint 1, e a recomendação registrada é 3D — terraformar sem ver relevo é trabalhar às cegas.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="block-head"><h2>Avanço</h2><span>9 sprints · MVP de autoria</span></div>
+    <div class="progress" role="img" aria-label="Uma sprint parcial, oito não iniciadas">
+      <div style="flex:1"><span class="hatch h-doing"></span></div>
+      <div style="flex:8;border-left:1px solid var(--ink)"><span class="hatch h-open"></span></div>
+    </div>
+    <div class="progress-legend">
+      <span>Parcial — 1 (Sprint 0)</span><span>Não iniciado — 8</span><span>Nenhuma sprint fechada</span>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="block-head"><h2>Já produzido</h2><span>5 artefatos · spec, não implementação</span></div>
+    <div class="shipped">
+      <div class="shipped-row"><span class="mark m-port">→</span><div>
+        <code>city-document-v1.ts</code>
+        <p>Esquema canônico completo e verificado sob <code>tsc --noEmit</code> estrito. Com a mudança para Godot, vira <b>especificação a portar para C#</b> — contrato válido, código que não roda.</p>
+      </div></div>
+      <div class="shipped-row"><span class="mark m-port">→</span><div>
+        <code>engine-pipeline.ts</code>
+        <p>Comandos, contrato validate/apply, envelope de eventos, bridge. Também vira spec. Atenção na tradução: união discriminada não existe em C# — exige <code>records</code> selados e <code>TreatWarningsAsErrors</code>.</p>
+      </div></div>
+      <div class="shipped-row"><span class="mark m-ok">✓</span><div>
+        <code>LINHA-DE-BASE.md</code>
+        <p>Auditoria de proveniência: o que veio de você, o que foi derivado por raciocínio, o que foi verificado com fonte, e o que foi afirmado sem verificar. Três correções aplicadas a partir dela.</p>
+      </div></div>
+      <div class="shipped-row"><span class="mark m-ok">✓</span><div>
+        <code>ADR-002 — pipeline de asset</code>
+        <p>Pré-render offline para atlas de ângulos fixos. Sprite stacking avaliado e rejeitado como formato de export: é renderizador, não formato, e o custo de fatias briga com fidelidade métrica.</p>
+      </div></div>
+      <div class="shipped-row"><span class="mark m-ok">✓</span><div>
+        <code>ADR-001 — rasterização de vias</code>
+        <p>Cobertura fracionária por supersample 4×4. Segue válido e ganhou consumidor real: o export para TMX, dentro do MVP.</p>
+      </div></div>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="block-head"><h2>Sprints</h2><span>autoria primeiro</span></div>
+
+    <div class="sprint">
+      <div class="sprint-id"><span class="hatch h-doing"></span><b>0</b></div>
+      <div class="sprint-body">
+        <h3 class="sprint-title">Fundação</h3>
+        <p class="sprint-goal">Projeto Godot C#, esquema portado, decisões em ADR. Parcial: spec, ADR-001, ADR-002 e linha de base prontos; falta o esquema compilando em C#.</p>
+        <div class="mods"><code>Core/Document</code><code>Core/Units</code><code>docs/adr/</code><code>Test/CommandExhaustiveness</code></div>
+        <p class="gate"><b>Gate:</b> esquema compilando em C# com TreatWarningsAsErrors</p>
+      </div>
+    </div>
+
+    <div class="sprint">
+      <div class="sprint-id"><span class="hatch h-open"></span><b>1</b></div>
+      <div class="sprint-body">
+        <h3 class="sprint-title">Documento e persistência</h3>
+        <p class="sprint-goal">CityDocument em C#, salvar e abrir. Nada de UI, nada de simulação.</p>
+        <div class="mods"><code>Document/Model</code><code>Document/Serialize</code><code>Commands/Base</code><code>Test/RoundTrip</code></div>
+        <p class="gate"><b>Gate:</b> monta documento em código → serializa → lê de volta → igual ao original</p>
+      </div>
+    </div>
+
+    <div class="sprint">
+      <div class="sprint-id"><span class="hatch h-open"></span><b>2</b></div>
+      <div class="sprint-body">
+        <h3 class="sprint-title">Terreno</h3>
+        <p class="sprint-goal">Terraformar: elevar, rebaixar, suavizar. Visualização de declive.</p>
+        <div class="mods"><code>Terrain/Field</code><code>Terrain/Brush</code><code>Terrain/SlopeView</code><code>Commands/Sculpt</code></div>
+        <p class="gate"><b>Gate:</b> esculpir uma colina e ver o declive mudar</p>
+      </div>
+    </div>
+
+    <div class="sprint">
+      <div class="sprint-id"><span class="hatch h-open"></span><b>3</b></div>
+      <div class="sprint-body">
+        <h3 class="sprint-title">Hidrografia</h3>
+        <p class="sprint-goal">Rios, lagos e mar como camada própria. O terreno final é derivado, nunca escavado.</p>
+        <div class="mods"><code>Hydro/Model</code><code>Hydro/Resolve</code><code>Hydro/Tools</code><code>Commands/River</code></div>
+        <p class="gate"><b>Gate:</b> mover o traçado de um rio não deixa vala antiga para trás</p>
+      </div>
+    </div>
+
+    <div class="sprint">
+      <div class="sprint-id"><span class="hatch h-open"></span><b>4</b></div>
+      <div class="sprint-body">
+        <h3 class="sprint-title">Vias</h3>
+        <p class="sprint-goal">Grafo de polilinhas métricas. Nodes explícitos: cruzamento nunca é inferido.</p>
+        <div class="mods"><code>Network/Graph</code><code>Network/Edit</code><code>Network/Snap</code><code>Commands/Road</code></div>
+        <p class="gate"><b>Gate:</b> traçar duas vias que se cruzam e obter um node compartilhado</p>
+      </div>
+    </div>
+
+    <div class="sprint">
+      <div class="sprint-id"><span class="hatch h-open"></span><b>5</b></div>
+      <div class="sprint-body">
+        <h3 class="sprint-title">Zonas e bairros</h3>
+        <p class="sprint-goal">Polígonos de zoneamento em metros. Validação de declive sob footprint.</p>
+        <div class="mods"><code>Zoning/Model</code><code>Zoning/Paint</code><code>Zoning/Validate</code><code>Commands/Zone</code></div>
+        <p class="gate"><b>Gate:</b> zona em terreno íngreme demais é rejeitada com motivo</p>
+      </div>
+    </div>
+
+    <div class="sprint">
+      <div class="sprint-id"><span class="hatch h-open"></span><b>6</b></div>
+      <div class="sprint-body">
+        <h3 class="sprint-title">Catálogo e objetos</h3>
+        <p class="sprint-goal">Casas, prédios, estátuas, decorações. Footprint em metros reais; asset por referência trocável.</p>
+        <div class="mods"><code>Catalog/Prototype</code><code>Catalog/Prerender</code><code>Placement/Tools</code><code>Commands/Place</code></div>
+        <p class="gate"><b>Gate:</b> trocar o asset de um protótipo sem tocar no documento</p>
+      </div>
+    </div>
+
+    <div class="sprint">
+      <div class="sprint-id"><span class="hatch h-open"></span><b>7</b></div>
+      <div class="sprint-body">
+        <h3 class="sprint-title">Export</h3>
+        <p class="sprint-goal">O propósito do projeto. Camadas independentes mais manifesto, e rasterização para TMX.</p>
+        <div class="mods"><code>Export/Manifest</code><code>Export/Layers</code><code>Export/Rasterize</code><code>Export/Tmx</code><code>Export/Sprites</code></div>
+        <p class="gate"><b>Gate:</b> consumidor externo lê só roads.json e desenha a malha correta</p>
+      </div>
+    </div>
+
+    <div class="sprint">
+      <div class="sprint-id"><span class="hatch h-open"></span><b>8</b></div>
+      <div class="sprint-body">
+        <h3 class="sprint-title">Ferramentas e UX</h3>
+        <p class="sprint-goal">O que torna a ferramenta usável de verdade. Undo é requisito, não extra.</p>
+        <div class="mods"><code>Tools/Registry</code><code>Tools/Cursor</code><code>Tools/Snapping</code><code>History/UndoStack</code></div>
+        <p class="gate"><b>Gate:</b> desfazer qualquer comando restaura o documento byte a byte</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="block-head"><h2>Formato de export</h2><span>uma camada por consumidor</span></div>
+    <div class="export">
+      <div class="export-row"><code>manifest.json</code><span>Escala, bounds, versão, catálogo exigido</span></div>
+      <div class="export-row"><code>terrain.bin</code><span>Heightmap resolvido em float32, já com hidrografia aplicada</span></div>
+      <div class="export-row"><code>hydrography.json</code><span>Rios e corpos d'água como polilinhas e polígonos</span></div>
+      <div class="export-row"><code>roads.json</code><span>Grafo métrico, compatível com GeoJSON</span></div>
+      <div class="export-row"><code>zones.json</code><span>Polígonos de zoneamento em metros</span></div>
+      <div class="export-row"><code>placements.json</code><span>Id, prototypeId, posição e rotação</span></div>
+      <div class="export-row"><code>sprites/</code><span>Atlas pré-renderizado por protótipo, N ângulos de yaw (ADR-002)</span></div>
+      <div class="export-row"><code>tiles/</code><span>Rasterização opcional, para consumidores em grid (TMX)</span></div>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="block-head"><h2>Decisões travadas</h2><span>mudar invalida trabalho feito</span></div>
+    <div class="decisions">
+      <div class="dec is-new"><b>Autoria é primária</b><span>O produto é a cidade autorada. Jogo é consumidor posterior do mesmo documento.</span></div>
+      <div class="dec is-new"><b>Godot 4.x · C# · .NET 8</b><span>Convenção adotada: 1 unidade = 1 metro. Espaço de mundo mapeia direto, sem conversão.</span></div>
+      <div class="dec is-new"><b>Licença por processo</b><span>Não se lê o código-fonte de referência. Clean room formal exige duas pessoas; o projeto é solo.</span></div>
+      <div class="dec is-new"><b>Pré-render, não sprite stacking</b><span>Autoria 3D → atlas de ângulos fixos. Proporção correta por construção: tudo sai da mesma cena, em metros reais.</span></div>
+      <div class="dec is-new"><b>Hidrografia é camada</b><span>Terreno final é derivado. Escavar rio no heightmap é proibido.</span></div>
+      <div class="dec is-new"><b>Export em camadas</b><span>Quem quer só a malha viária não parseia estátuas.</span></div>
+      <div class="dec is-new"><b>Undo é requisito</b><span>Sai de graça do pipeline de comandos — se ninguém furar o pipeline.</span></div>
+      <div class="dec"><b>Três espaços separados</b><span>Mundo em metros · grid em tiles · tela em pixels.</span></div>
+      <div class="dec"><b>metersPerTile = 8</b><span>Casa ≈ 1 célula, quarteirão ≈ 10. Alterar invalida o documento.</span></div>
+      <div class="dec"><b>Documento é a verdade</b><span>rasterize e resolve são unidirecionais. Não existe caminho de volta.</span></div>
+      <div class="dec"><b>Vias como grafo métrico</b><span>Polilinhas viram GeoJSON ou navmesh direto. Tiles não viram nada.</span></div>
+      <div class="dec"><b>Terreno nos vértices</b><span>(cols+1)×(rows+1). Borda definida sem interpolação.</span></div>
+      <div class="dec"><b>Pipeline de direção única</b><span>UI → comando → validate → apply → evento → snapshot → UI.</span></div>
+      <div class="dec"><b>ADR-001 — cobertura fracionária</b><span>Hierarquia viária sem tipo de tile novo. Consumidor: o export.</span></div>
+      <div class="dec"><b>Catálogo de protótipos</b><span>Footprint em metros reais; assets por referência trocável.</span></div>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="block-head"><h2>Pendente de decisão</h2><span>7 itens · nenhum bloqueante</span></div>
+    <table class="pending">
+      <thead><tr><th>Item</th><th>Natureza</th><th>Quando</th></tr></thead>
+      <tbody>
+        <tr><td>Editor em 3D ou 2D isométrico</td><td><span class="tag t-found">Ferramenta</span></td><td>Sprint 2 — recomendação: 3D</td></tr>
+        <tr><td>Formato do terrain.bin — float32 cru ou PNG 16-bit</td><td><span class="tag t-found">Fundacional</span></td><td>Sprint 1</td></tr>
+        <tr><td>Rio: largura variável ao longo do traçado ou constante por edge</td><td><span class="tag t-model">Modelo</span></td><td>Sprint 3</td></tr>
+        <tr><td>Zonas: polígono livre ou retângulo alinhado ao grid</td><td><span class="tag t-found">Fundacional</span></td><td>Sprint 5</td></tr>
+        <tr><td>Catálogo por documento ou compartilhado entre cidades</td><td><span class="tag t-model">Modelo</span></td><td>Sprint 6</td></tr>
+        <tr><td>Projeção do pré-render e número de ângulos de yaw</td><td><span class="tag t-model">Asset</span></td><td>Sprint 6</td></tr>
+        <tr><td>Pré-render dentro do Godot ou ferramenta externa</td><td><span class="tag t-model">Asset</span></td><td>Sprint 6</td></tr>
+        <tr><td>Viadutos — roadEdge guarda uma edge por célula</td><td><span class="tag t-defer">Adiado</span></td><td>ADR novo quando houver tráfego multinível</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="block">
+    <div class="risk">
+      <h3>Riscos registrados</h3>
+      <p><b>ADR-001 pode virar letra morta.</b> Se alguém escrever <code>if (roadCoverage &gt; 0)</code> e tratar via como booleano, o array extra vira só peso. <em>Mitigação:</em> teste que rasteriza via de 6m e via de 24m e falha se derem a mesma capacidade.</p>
+      <p><b>O documento pode não ser autossuficiente.</b> <em>Mitigação:</em> o round-trip do Sprint 1 — se falhar, existe estado morando fora do documento.</p>
+      <p><b>Exaustividade de comandos não sobrevive à tradução para C#.</b> Switch sobre hierarquia de <code>record</code> emite CS8509 <em>mesmo com todos os casos cobertos</em> — a flag de warnings não resolve e chega a atrapalhar. <em>Mitigação:</em> teste de reflexão sobre os subtipos de <code>Command</code>, e proibição de braço <code>_ =&gt;</code>.</p>
+      <p><b>O jogo pode canibalizar a ferramenta.</b> RCI, tick e orçamento são sedutores e não servem à autoria. <em>Mitigação:</em> estão fora do MVP por decisão registrada, não por esquecimento.</p>
+    </div>
+  </section>
+
+  <footer>
+    Fora do MVP, tudo é jogo: zonas RCI simuladas · tick loop · economia · demanda · tráfego · desastres · agentes · multiplayer
+  </footer>
+
+</div>
+</body>
+</html>
