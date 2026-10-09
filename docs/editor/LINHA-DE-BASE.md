@@ -8,6 +8,7 @@
 > tarde que uma fundação era palpite.
 >
 > **Data:** 2026-09-06 · Corresponde à revisão 4 da memória do projeto.
+> **Correção de 2026-10-09:** item A1 falsificado — ver abaixo.
 
 ---
 
@@ -28,7 +29,10 @@
 Base factual do projeto. Nada aqui foi verificado por mim porque não precisa
 ser: é o seu contexto.
 
-1. Não existe engine de simulação pronto. O projeto começa do zero.
+1. ~~Não existe engine de simulação pronto. O projeto começa do zero.~~
+   **Falsificado em 2026-09-19:** existia o `citybuilderteste`, engine em tiles
+   avançado. Resolvido pela Opção A — ele é o jogo; o editor começa do zero em
+   repositório próprio, então o plano do editor continua de pé.
 2. A stack será Godot, recebendo o projeto.
 3. O propósito primário é **autoria de mapas/cidades**; o jogo é um consumidor
    possível e posterior.

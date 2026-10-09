@@ -1,95 +1,39 @@
-# CLAUDE.md — Editor de Cidades
+# CLAUDE.md — citybuilderteste (o jogo)
 
-Contexto permanente do **editor métrico**. Leia antes de qualquer tarefa.
+Contexto permanente deste repositório. Leia antes de qualquer tarefa.
 
-> ⚠️ Este arquivo descreve o editor de cidades em escala métrica. O código em
-> `src/` hoje é um engine de simulação em tiles, de outra linhagem. As duas
-> coisas ainda não foram reconciliadas — ver `docs/AUDITORIA-REPOSITORIO.md`.
-> Não trate este arquivo como descrição do que está implementado.
+## O que é este repositório
 
-## O que é
+O **jogo**: um simulador de cidade 2D isométrico em C# puro, engine-agnostic,
+com a simulação separada da apresentação e rodando headless.
 
-Um **editor de cidades e mapas** em escala métrica. O produto é a cidade
-autorada e exportada, não uma partida jogada. Um jogo pode ser construído
-depois, como segundo consumidor do mesmo documento.
+A arquitetura está descrita em `docs/ARCHITECTURE.md`. Ela é a referência para
+qualquer trabalho em `src/`.
 
-Stack: **Godot 4.x · C# · .NET 8**.
+## O que este repositório NÃO é
 
-A equivalência 1 unidade Godot = 1 metro é convenção adotada por este projeto,
-não regra do engine. Respeite-a em todo código que toca espaço de mundo.
+Ele **não** é o editor de cidades em escala métrica. O editor é outro projeto,
+com repositório próprio, e este jogo é um dos consumidores do que ele exporta.
+A separação foi decidida em 2026-10-09 — ver `docs/AUDITORIA-REPOSITORIO.md` §9.
 
-## Arquitetura em uma frase
+Consequências práticas:
 
-`CityDocument` é a única verdade. Tudo o mais — grid de tiles, terreno
-resolvido, camadas de export — é projeção derivada, unidirecional e
-descartável.
+- `docs/editor/` contém a documentação do editor **em trânsito**. Ela será
+  movida para o repositório do editor e removida daqui. **Não é instrução para
+  o código deste repositório.** As regras de lá (documento métrico imutável,
+  comandos como dados, "tick e economia fora de escopo") valem para o editor,
+  não para o jogo.
+- Não implemente aqui ferramentas de autoria métrica: terreno em metros,
+  hidrografia, vias como polilinhas métricas, export em camadas. Isso é do
+  editor.
 
-## Invariantes — nunca violar
+## Fronteira com o editor — contrato em aberto
 
-1. **Toda geometria do documento está em metros.** Tiles existem apenas dentro
-   do subsistema de rasterização. Nenhum campo de `CityDocument` usa tile.
-2. **Não existe caminho de volta.** Nada reconstrói o documento a partir de uma
-   projeção. Não escreva `Derasterize`, `Unresolve` ou equivalente.
-3. **Mutação só por comando.** UI → `Command` → `Validate` → `Apply` →
-   documento novo → evento. Se um nó da UI escreve no documento, a arquitetura
-   quebrou.
-4. **`Validate` não conserta.** Retorna o motivo da rejeição ou `null`. Não
-   ajusta valores, não sugere alternativa, não escolhe o "mais próximo válido".
-5. **Contrato Validate/Apply.** Se `Validate` passou, `Apply` não falha. Exceção
-   em `Apply` é violação de invariante, nunca fluxo de negócio.
-6. **`CityEditor.Core` não referencia Godot.** É biblioteca .NET pura e
-   testável headless. Só o projeto Godot referencia Godot.
-7. **Documento imutável.** `Apply` devolve um documento novo e incrementa
-   `Revision`. Nunca muta no lugar — undo/redo depende disso.
-8. **Rio nunca é escavado no heightmap.** `TerrainField` é base editada à mão;
-   hidrografia é camada separada; o terreno final é derivado por `Resolve`.
-9. **`RoadCoverage` é fração, nunca booleano.** Ver ADR-001. `if (coverage > 0)`
-   usado como "é estrada" anula a decisão inteira.
+O editor exporta, entre outras camadas, uma rasterização opcional em grid
+(`tiles/`) com escala declarada no `manifest.json` (`metersPerTile = 8` no
+editor). Este jogo usa `GridCoord` inteiro como unidade de posição e hoje não
+tem noção de metro.
 
-## Princípios de engenharia
-
-- Falhe rápido. Precondição não atendida lança, não retorna valor mágico.
-- Sem fallback. Um caminho correto, não alternativas silenciosas.
-- Sem compatibilidade retroativa preventiva. Clareza vence.
-- Mudanças cirúrgicas. Não refatore o que não foi pedido.
-- Uma responsabilidade por função.
-- Não invente parâmetros de API. Se não tem certeza da assinatura, verifique.
-
-## Decisões travadas — não reabrir sem ADR
-
-| Decisão | Valor |
-|---|---|
-| Escala de simulação | `metersPerTile = 8` — alterar invalida o documento |
-| Amostragem de terreno | Nos vértices: `(cols+1) × (rows+1)` |
-| Resolução de terreno | `sampleSpacing` independente de `metersPerTile` |
-| Vias | Grafo de polilinhas métricas, não células pintadas |
-| Cruzamento | Node compartilhado explícito; sem node = viaduto |
-| Rasterização de via | Cobertura fracionária, supersample 4×4 (ADR-001) |
-| Pipeline de asset | Pré-render offline para atlas de ângulos (ADR-002) |
-| Versionamento | `Version` literal; migração produz outro tipo |
-
-## Fora de escopo — não implemente, mesmo que pareça natural
-
-Zonas RCI simuladas, tick loop, economia, orçamento, demanda, tráfego,
-desastres, agentes animados, multiplayer. Tudo isso é **jogo**, e o jogo não é
-este projeto. Se uma tarefa parecer exigir simulação, pare e pergunte.
-
-## Layout do repositório
-
-```
-src/CityEditor.Core/         biblioteca .NET pura — modelo, comandos, export
-src/CityEditor.Core.Tests/   xUnit, headless
-src/CityEditor.Godot/        projeto Godot, referencia Core
-docs/adr/                    decisões arquiteturais
-docs/spec/                   spec original em TypeScript (referência, não roda)
-```
-
-## Referências de arquitetura
-
-O projeto não deriva de nenhum codebase existente. Por decisão de processo,
-código-fonte de simuladores de cidade de terceiros **não é lido nem
-consultado** — nem para inspiração, nem para conferir comportamento. Não
-busque, não cite, não copie estruturas, algoritmos ou nomes de função.
-
-Pelo mesmo motivo, não afirme no código nem em comentários o que outro projeto
-faz ou deixa de fazer. Justifique cada decisão pelo raciocínio próprio.
+**Ainda não foi decidido** como o jogo vai importar esse grid nem se o tile do
+jogo passa a significar 8 m. Não tome essa decisão implicitamente em código —
+ela precisa de registro próprio antes.

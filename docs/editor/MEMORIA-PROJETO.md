@@ -4,10 +4,14 @@
 > conversa futura sem repetir o histórico. Atualizar a cada decisão travada
 > ou destravada.
 
-**Revisão:** 5 · **Data:** 2026-09-17
-**Mudança desde a rev. 4:** auditoria de proveniência (ver `LINHA-DE-BASE.md`).
-Afirmações não verificadas sobre codebases de terceiros foram removidas ou
-reescritas como princípios próprios. Nenhuma decisão mudou.
+**Revisão:** 6 · **Data:** 2026-10-09
+**Mudança desde a rev. 5:** editor e jogo separados em dois repositórios
+(Opção A da auditoria). O `citybuilderteste`, simulador em tiles já existente, é
+o jogo e consome o export do editor. Nenhuma decisão do editor mudou.
+
+*Rev. 5:* auditoria de proveniência (ver `LINHA-DE-BASE.md`). Afirmações não
+verificadas sobre codebases de terceiros foram removidas ou reescritas como
+princípios próprios.
 
 *Rev. 4:* correção — `TreatWarningsAsErrors` NÃO garante exaustividade de
 comandos em C#. Guarda passa a ser teste de reflexão (§4.2).
@@ -64,8 +68,9 @@ levantada e respondida. Não é. As três ocupam camadas distintas:
 | City-searcher-tool | Dados | Gazetteer, dossiês, arquétipos de cidades brasileiras |
 | Ferramenta de Mundo | Entidades | Clubes, elencos, geografia competitiva |
 | **Este projeto** | **Geometria** | **Terreno, hidrografia, vias, zonas, volumes — em metros** |
+| `citybuilderteste` | Simulação (jogo) | Tick, zoneamento, redes, tráfego, economia — em tiles. Consome o export deste projeto |
 
-Nenhuma das duas primeiras modela geometria métrica. É exatamente o vazio que
+Nenhuma das outras modela geometria métrica. É exatamente o vazio que
 este projeto preenche, e é o que o Tiled não entrega na escala desejada.
 
 ---
@@ -392,7 +397,9 @@ sprite stacking (rejeitado) · ADR · undo stack
 
 ## 9. Fora de escopo no MVP
 
-Backlog explícito, não esquecimento. Tudo abaixo é **jogo**, não ferramenta:
+Backlog explícito, não esquecimento. Tudo abaixo é **jogo**, não ferramenta — e
+o jogo existe: é o `citybuilderteste`, em repositório próprio. Nada disto entra
+no editor:
 
 Zonas RCI simuladas · tick loop · economia e orçamento · demanda · tráfego ·
 desastres · multiplayer · sprites animados · agentes (pessoas, veículos) ·

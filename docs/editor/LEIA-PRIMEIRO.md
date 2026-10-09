@@ -1,14 +1,14 @@
 # Leia primeiro — estado do projeto e ordem de leitura
 
-**Atualizado em:** 2026-09-19
+**Atualizado em:** 2026-10-09
 
 Esta pasta contém o planejamento de um **editor de cidades e mapas em escala
-métrica**, produzido em sessões de projeto. O código que está em `src/` neste
-repositório é um **engine de simulação em tiles**, construído separadamente.
+métrica**. Ela está **em trânsito**: o editor terá repositório próprio, e esta
+pasta inteira será movida para lá.
 
-**As duas coisas ainda não foram reconciliadas.** Há uma decisão pendente, e ela
-está descrita em `AUDITORIA-REPOSITORIO.md`. Leia esse arquivo antes de agir
-sobre qualquer outro.
+Decisão de 2026-10-09 (Opção A): o `citybuilderteste`, um simulador em tiles, é
+o jogo, e consome o export do editor. Detalhes em `../AUDITORIA-REPOSITORIO.md`
+§9.
 
 ---
 
@@ -16,7 +16,7 @@ sobre qualquer outro.
 
 | # | Arquivo | Para quê |
 |---|---|---|
-| 1 | `AUDITORIA-REPOSITORIO.md` | Conflito entre o código existente e o plano. **Decisão pendente.** |
+| 1 | `../AUDITORIA-REPOSITORIO.md` | Por que editor e jogo foram separados. Decisão na §9. |
 | 2 | `MEMORIA-PROJETO.md` | Contexto durável: propósito, decisões travadas, riscos, fora de escopo |
 | 3 | `LINHA-DE-BASE.md` | De onde veio cada afirmação e com que confiança |
 | 4 | `adr/adr-001-rasterizacao-de-vias.md` | Cobertura fracionária de vias |
@@ -24,10 +24,10 @@ sobre qualquer outro.
 | 6 | `spec/city-document-v1.ts` | Esquema canônico do documento (contrato, não implementação) |
 | 7 | `spec/engine-pipeline.ts` | Comandos, validate/apply, eventos, bridge |
 | 8 | `backlog-sprints.html` | Backlog visual das sprints — abrir no navegador |
-| 9 | `handoff/SPRINT-0-HANDOFF.md` | **Suspenso.** Briefing de implementação, inválido até a decisão |
+| 9 | `handoff/SPRINT-0-HANDOFF.md` | Briefing do Sprint 0 — executar só no repositório do editor |
 
-`../CLAUDE.md` na raiz descreve invariantes do **editor**, não do código atual
-em `src/`.
+`CLAUDE.md` nesta pasta descreve as invariantes do editor. No repositório do
+editor ele vai para a raiz.
 
 ---
 
@@ -48,15 +48,16 @@ em `src/`.
 
 Nada do plano acima. Os arquivos `.ts` são especificação a portar, e não rodam.
 
-O que existe em `src/` é de outra linhagem: engine de simulação em tiles, com
-tick, ECS, zoneamento, redes, pathfinding, tráfego, utilidades, economia,
-persistência e replay. Ver `ARCHITECTURE.md`.
+O que existe em `src/` do `citybuilderteste` é o jogo: engine de simulação em
+tiles, com tick, ECS, zoneamento, redes, pathfinding, tráfego, utilidades,
+economia, persistência e replay. Ver `../ARCHITECTURE.md`.
 
 ### Pendente de decisão
 
 | Item | Natureza | Onde está descrito |
 |---|---|---|
-| **Reconciliar editor métrico × engine em tiles** | **Bloqueante** | `AUDITORIA-REPOSITORIO.md` §6 |
+| Criar o repositório do editor e mover esta pasta | **Próximo passo** | `../AUDITORIA-REPOSITORIO.md` §9 |
+| Como o jogo importa o `tiles/` do editor | Contrato | `../AUDITORIA-REPOSITORIO.md` §9 |
 | Editor em 3D ou 2D isométrico | Ferramenta | `MEMORIA-PROJETO.md` §3 |
 | Formato do `terrain.bin` | Fundacional | `MEMORIA-PROJETO.md` §6 |
 | Zonas: polígono livre ou retângulo alinhado | Fundacional | `MEMORIA-PROJETO.md` §6 |

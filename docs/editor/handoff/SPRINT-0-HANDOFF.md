@@ -1,10 +1,8 @@
 # Sprint 0 — Handoff para o Claude Code
 
-> ⚠️ **SUSPENSO — não executar.**
-> Este briefing foi escrito assumindo repositório vazio. O repositório já contém
-> `CityBuilder.Core` e `CityBuilder.App`, com padrão de comando diferente do
-> especificado aqui. Ver `AUDITORIA-REPOSITORIO.md` §6 — a decisão pendente
-> define se este documento é revisado ou descartado.
+> ⚠️ **Executar somente no repositório próprio do editor.** Nunca no
+> `citybuilderteste`, que é o jogo e já contém `CityBuilder.Core` com outro
+> padrão de comando. Decisão de 2026-10-09 (Opção A, dois repositórios).
 
 Tarefa única: **portar a especificação TypeScript para C#** e deixar o
 esqueleto do repositório compilando e testando. Sem UI, sem Godot rodando,

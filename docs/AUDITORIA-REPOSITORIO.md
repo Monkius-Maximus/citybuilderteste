@@ -5,9 +5,9 @@
 **Fontes lidas:** `README.md` e `docs/ARCHITECTURE.md`. O código-fonte em `src/`
 não foi lido — as conclusões abaixo vêm da documentação do próprio repositório.
 
-> **Status: decisão pendente.** Nada neste documento deve ser executado antes de
-> a decisão da seção 6 ser tomada. O `handoff/SPRINT-0-HANDOFF.md` está
-> suspenso até lá.
+> **Status: decidido em 2026-10-09 — Opção A (dois repositórios).** Ver §9.
+> Este repositório é o jogo. A documentação do editor está em `docs/editor/`
+> apenas em trânsito, até ser movida para o repositório próprio do editor.
 
 ---
 
@@ -137,7 +137,7 @@ deixa de ser "o projeto" e passa a ser **o jogo**, um dos consumidores.
 
 ---
 
-## 6. Decisão pendente
+## 6. Opções avaliadas
 
 Três caminhos. Nenhum é obviamente certo, e a escolha muda tudo o que vem depois.
 
@@ -183,3 +183,47 @@ Não foi respondido se este repositório foi construído antes desta conversa ou
 paralelo a ela. A resposta decide se o que existe é **uma alternativa a
 considerar** ou **uma duplicação a reconciliar** — e isso pesa na escolha entre
 A, B e C.
+
+*Nota de 2026-10-09:* o merge que trouxe o engine veio do branch
+`claude/simcity-game-architecture`, o que indica uma sessão de Claude Code em
+paralelo ao planejamento. A pergunta perdeu peso com a escolha da Opção A, que
+mantém os dois trabalhos.
+
+---
+
+## 9. Decisão — Opção A, dois repositórios
+
+**Data:** 2026-10-09 · **Decidido por:** Diogo
+
+`citybuilderteste` é **o jogo**: simulador em tiles, com todo o escopo de
+simulação que ele já tem. O **editor métrico** ganha repositório próprio, e o
+jogo passa a ser um dos consumidores do export do editor.
+
+Nenhuma decisão do plano do editor foi revogada. A §9 da memória do projeto
+("tick, economia e tráfego fora de escopo") continua valendo, **para o editor**:
+esse escopo não foi descartado, ele mora no jogo.
+
+### Consequências imediatas
+
+| Item | Situação |
+|---|---|
+| `CLAUDE.md` na raiz | Reescrito para descrever o jogo e a fronteira com o editor |
+| Documentação do editor | Movida para `docs/editor/`, em trânsito |
+| `docs/editor/handoff/SPRINT-0-HANDOFF.md` | Volta a ser válido, **somente** no repositório do editor |
+| `src/` | Intocado |
+
+### Próximos passos
+
+1. Criar o repositório do editor (vazio).
+2. Mover `docs/editor/*` para lá: `docs/editor/CLAUDE.md` vira o `CLAUDE.md` da
+   raiz, o restante vai para `docs/`.
+3. Remover `docs/editor/` daqui.
+4. Executar o Sprint 0 do editor no repositório novo.
+
+### Contrato entre os dois — em aberto
+
+O editor exporta `tiles/` com escala declarada no `manifest.json`
+(`metersPerTile = 8`). O jogo usa `GridCoord` inteiro sem noção de metro. Falta
+decidir como o jogo importa esse grid e se o tile do jogo passa a significar
+8 m. Não é bloqueante para nenhum dos dois agora — vira bloqueante quando o
+Sprint 7 do editor (export) começar.
